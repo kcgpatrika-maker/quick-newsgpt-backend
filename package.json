@@ -1,0 +1,16 @@
+{
+  "name": "quick-newsgpt-backend",
+  "version": "1.0.0",
+  "description": "Quick NewsGPT backend - RSS based news and simple Ask endpoint",
+  "main": "server.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "rss-parser": "^3.13.0",
+    "node-fetch": "^3.3.2",
+    "cors": "^2.8.5"
+  }
+}
