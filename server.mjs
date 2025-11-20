@@ -1,11 +1,10 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
-import * as cheerio from "cheerio"; // ESM compatible import
+import * as cheerio from "cheerio"; // Node ESM compatible
 
 const app = express();
 app.use(cors());
-
 const PORT = process.env.PORT || 3000;
 
 // ----------------------------
@@ -13,11 +12,10 @@ const PORT = process.env.PORT || 3000;
 // ----------------------------
 async function scrapeNews(url, selector) {
   try {
-    const html = await fetch(url).then(res => res.text());
+    const html = await fetch(url).then(r => r.text());
     const $ = cheerio.load(html);
 
     const results = [];
-
     $(selector).each((i, el) => {
       const title = $(el).text().trim();
       let link = $(el).attr("href");
@@ -35,7 +33,7 @@ async function scrapeNews(url, selector) {
 }
 
 // ----------------------------
-// International (BBC Hindi + BBC)
+// International
 // ----------------------------
 app.get("/headline/international", async (req, res) => {
   const bbcHindi = await scrapeNews("https://www.bbc.com/hindi", "a[href*='/hindi/articles']");
@@ -44,7 +42,7 @@ app.get("/headline/international", async (req, res) => {
 });
 
 // ----------------------------
-// India (NDTV + India Today)
+// India
 // ----------------------------
 app.get("/headline/india", async (req, res) => {
   const ndtv = await scrapeNews("https://www.ndtv.com/latest", "h2 a");
@@ -53,11 +51,10 @@ app.get("/headline/india", async (req, res) => {
 });
 
 // ----------------------------
-// Rajasthan / State (Patrika)
+// Rajasthan / State (Jaipur priority)
 // ----------------------------
 app.get("/headline/rajasthan", async (req, res) => {
   const patrika = await scrapeNews("https://www.patrika.com/rajasthan-news/", ".news-card a");
-  // Jaipur first
   const sorted = patrika.sort((a, b) => {
     const aJaipur = /jaipur|जयपुर/i.test(a.title);
     const bJaipur = /jaipur|जयपुर/i.test(b.title);
@@ -84,5 +81,5 @@ app.get("/ask", async (req, res) => {
 // Start server
 // ----------------------------
 app.listen(PORT, () => {
-  console.log("QuickNewsGPT API running on port " + PORT);
+  console.log("QuickNewsGPT backend running on port " + PORT);
 });
