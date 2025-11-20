@@ -1,111 +1,80 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
+import Parser from "rss-parser";
 
 const app = express();
 app.use(cors());
 
 const PORT = process.env.PORT || 3000;
+const rss = new Parser();
 
-// --------------------------------------
-// Helper: Scrape headlines from any URL
-// --------------------------------------
-async function scrapeNews(url, selector) {
+// Helper: Fetch RSS feed
+async function fetchRSS(url) {
   try {
-    const html = await fetch(url).then(res => res.text());
-    const $ = cheerio.load(html);
-
-    const results = [];
-
-    $(selector).each((i, el) => {
-      const title = $(el).text().trim();
-      const link = $(el).attr("href");
-
-      if (!title || !link) return;
-
-      results.push({
-        title,
-        url: link.startsWith("http") ? link : url + link,
-        source: url.replace("https://", ""),
-      });
-    });
-
-    return results;
+    const feed = await rss.parseURL(url);
+    return feed.items.map(item => ({
+      title: item.title,
+      url: item.link,
+      source: feed.title
+    }));
   } catch (err) {
-    console.log("Scrape error:", err);
+    console.log("RSS error:", err);
     return [];
   }
 }
 
-// --------------------------------------
-// International News (BBC Hindi + BBC)
-// --------------------------------------
+// ============================
+// International Headlines
+// ============================
 app.get("/headline/international", async (req, res) => {
-  const bbcHindi = await scrapeNews(
-    "https://www.bbc.com/hindi",
-    "a[href*='/hindi/articles']"
-  );
+  const BBC = await fetchRSS("https://feeds.bbci.co.uk/news/world/rss.xml");
+  const BBC_Hindi = await fetchRSS("https://feeds.bbci.co.uk/hindi/rss.xml");
 
-  const bbcWorld = await scrapeNews(
-    "https://www.bbc.com/news/world",
-    "a.gs-c-promo-heading"
-  );
-
-  res.json([...bbcHindi, ...bbcWorld].slice(0, 20));
+  res.json([...BBC_Hindi, ...BBC].slice(0, 20));
 });
 
-// --------------------------------------
-// India News (NDTV + India Today)
-// --------------------------------------
+// ============================
+// India Headlines
+// ============================
 app.get("/headline/india", async (req, res) => {
-  const ndtv = await scrapeNews(
-    "https://www.ndtv.com/latest",
-    "h2 a"
-  );
+  const NDTV = await fetchRSS("https://feeds.feedburner.com/ndtvnews-india-news");
+  const IndiaToday = await fetchRSS("https://www.indiatoday.in/rss/home");
 
-  const indiaToday = await scrapeNews(
-    "https://www.indiatoday.in/india",
-    ".detail a"
-  );
-
-  res.json([...ndtv, ...indiaToday].slice(0, 20));
+  res.json([...NDTV, ...IndiaToday].slice(0, 20));
 });
 
-// --------------------------------------
-// Rajasthan News (Rajasthan Patrika)
-// --------------------------------------
+// ============================
+// Rajasthan Headlines
+// ============================
 app.get("/headline/rajasthan", async (req, res) => {
-  const patrika = await scrapeNews(
-    "https://www.patrika.com/rajasthan-news/",
-    ".news-card a"
-  );
+  const Patrika = await fetchRSS("https://www.patrika.com/rss/rajasthan-news.xml");
 
-  res.json(patrika.slice(0, 20));
+  res.json(Patrika.slice(0, 20));
 });
 
-// --------------------------------------
-// ASK NEWS (Smart Search)
-// --------------------------------------
+// ============================
+// Ask News
+// ============================
 app.get("/ask", async (req, res) => {
   const q = req.query.q?.trim();
   if (!q) return res.json([]);
 
-  const hindiQuery = await scrapeNews(
-    `https://www.patrika.com/search/?q=${encodeURIComponent(q)}`,
-    ".news-card a"
+  const IndiaToday = await fetchRSS("https://www.indiatoday.in/rss/home");
+  const NDTV = await fetchRSS("https://feeds.feedburner.com/ndtvnews-india-news");
+  const Patrika = await fetchRSS("https://www.patrika.com/rss/rajasthan-news.xml");
+
+  const all = [...IndiaToday, ...NDTV, ...Patrika];
+
+  const filtered = all.filter(item =>
+    item.title?.toLowerCase().includes(q.toLowerCase())
   );
 
-  const englishQuery = await scrapeNews(
-    `https://www.ndtv.com/search?searchtext=${encodeURIComponent(q)}`,
-    "h2 a"
-  );
-
-  res.json([...hindiQuery, ...englishQuery].slice(0, 20));
+  res.json(filtered.slice(0, 20));
 });
 
-// --------------------------------------
+// ============================
 // Start Server
-// --------------------------------------
+// ============================
 app.listen(PORT, () => {
-  console.log("API-free news server running on port " + PORT);
+  console.log("API-free RSS News Server running on port " + PORT);
 });
