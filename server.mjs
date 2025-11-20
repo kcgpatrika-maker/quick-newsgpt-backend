@@ -2,7 +2,7 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
-import cheerio from "cheerio";
+import { load } from "cheerio";
 import Parser from "rss-parser";
 
 const app = express();
@@ -19,6 +19,7 @@ async function scrapeNews(url, selector, baseUrl) {
     const html = await fetch(url).then(res => res.text());
     const $ = cheerio.load(html);
     const results = [];
+    const $ = load(html);
 
     $(selector).each((i, el) => {
       const title = $(el).text().trim();
