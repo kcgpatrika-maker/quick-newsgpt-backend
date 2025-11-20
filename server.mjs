@@ -1,99 +1,111 @@
 import express from "express";
 import cors from "cors";
-import Parser from "rss-parser";
+import fetch from "node-fetch";
 
 const app = express();
-const parser = new Parser();
-
 app.use(cors());
-app.use(express.json());
 
-// RSS feeds (Hindi + English) - आप बाद में जोड़/हट कर सकते हैं
-const FEEDS = [
-  "https://rss.aajtak.in/rssfeed/120-India.xml",
-  "https://feeds.bbci.co.uk/hindi/rss.xml",
-  "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
-  "https://www.indiatoday.in/rss/home"
-];
+const PORT = process.env.PORT || 3000;
 
-// fallback sample (यदि live fetch fail हो)
-const FALLBACK = [
-  { id: "n1", title: "India launches new AI policy", summary: "Govt releases guidelines to boost AI transparency and local innovation.", link: "" },
-  { id: "n2", title: "Monsoon updates", summary: "Heavy rains expected in coastal belts; farmers advised to prepare.", link: "" },
-  { id: "n3", title: "Tech startup raises funds", summary: "A Bengaluru startup raised $5M for climate-tech product.", link: "" }
-];
+// =========================
+// Helper: Fetch News
+// =========================
 
-// Helper: fetch & parse all feeds (returns array of items)
-async function fetchAllFeeds() {
-  let all = [];
-  for (const url of FEEDS) {
-    try {
-      const feed = await parser.parseURL(url);
-      if (Array.isArray(feed.items)) {
-        feed.items.forEach((it, idx) => {
-          all.push({
-            id: it.guid || it.id || `${url}-${idx}`,
-            title: it.title || "No title",
-            summary: it.contentSnippet || it.summary || it.content || "",
-            link: it.link || "",
-            pubDate: it.pubDate || it.isoDate || null,
-            source: new URL(url).hostname.replace("www.", "")
-          });
-        });
-      }
-    } catch (err) {
-      // continue on error for this feed
-      console.error("Feed error:", url, err && err.message);
-    }
+async function fetchNews(query) {
+  try {
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=hi&apiKey=2a39547e93324e058ad06274cde01206`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.articles) return [];
+
+    return data.articles
+      .filter(a => a.title && a.url)
+      .map(a => ({
+        title: a.title,
+        url: a.url,
+        source: a.source?.name || "Unknown",
+        publishedAt: a.publishedAt
+      }));
+  } catch (err) {
+    console.error("Error fetching news:", err);
+    return [];
   }
-  return all;
 }
 
-// Root
-app.get("/", (req, res) => {
-  res.json({ message: "QuickNewsGPT backend running ✅", endpoints: ["/news", "/ask"] });
-});
+// =========================
+// FIXED CATEGORY ENDPOINTS
+// =========================
 
-// /news -> returns live items (top 20) or fallback
-app.get("/news", async (req, res) => {
-  try {
-    const allNews = await fetchAllFeeds();
-    if (!allNews || allNews.length === 0) {
-      return res.json({ date: new Date().toISOString(), count: FALLBACK.length, news: FALLBACK });
-    }
-    return res.json({ date: new Date().toISOString(), count: allNews.length, news: allNews.slice(0, 20) });
-  } catch (err) {
-    console.error("Error /news:", err);
-    return res.status(500).json({ error: "Error fetching news", fallback: FALLBACK });
+// 1. International
+app.get("/headline/international", async (req, res) => {
+  const keywords = ["World News", "International News", "Global Affairs"];
+  const allNews = [];
+
+  for (let q of keywords) {
+    const news = await fetchNews(q);
+    allNews.push(...news);
   }
+
+  res.json(allNews.slice(0, 20)); // return 20 fresh headlines
 });
 
-// /ask?q=keyword -> case-insensitive search in title + summary
+// 2. India
+app.get("/headline/india", async (req, res) => {
+  const keywords = ["India News", "Indian Politics", "India Latest"];
+  const allNews = [];
+
+  for (let q of keywords) {
+    const news = await fetchNews(q);
+    allNews.push(...news);
+  }
+
+  res.json(allNews.slice(0, 20));
+});
+
+// 3. Rajasthan
+app.get("/headline/rajasthan", async (req, res) => {
+  const keywords = [
+    "Rajasthan News",
+    "Jaipur News",
+    "Rajasthan Latest",
+    "राजस्थान खबरें",
+    "जयपुर समाचार"
+  ];
+  const allNews = [];
+
+  for (let q of keywords) {
+    const news = await fetchNews(q);
+    allNews.push(...news);
+  }
+
+  res.json(allNews.slice(0, 20));
+});
+
+// =========================
+// ASK NEWS ENDPOINT
+// =========================
+
 app.get("/ask", async (req, res) => {
-  try {
-    const q = (req.query.q || "").trim();
-    if (!q) return res.status(400).json({ error: "Please provide a query." });
+  const query = req.query.q;
+  if (!query) return res.json([]);
 
-    // fetch current items (live)
-    const allNews = await fetchAllFeeds();
-    const source = (allNews && allNews.length > 0) ? allNews : FALLBACK;
+  const englishQuery = query + " news latest India Rajasthan";
+  const hindiQuery = query + " खबरें समाचार";
 
-    const ql = q.toLowerCase();
-    const matched = source.filter(
-      (it) =>
-        (it.title && it.title.toLowerCase().includes(ql)) ||
-        (it.summary && it.summary.toLowerCase().includes(ql))
-    );
+  const news1 = await fetchNews(englishQuery);
+  const news2 = await fetchNews(hindiQuery);
 
-    return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
-  } catch (err) {
-    console.error("Error /ask:", err);
-    return res.status(500).json({ error: "Error searching news" });
-  }
+  const combined = [...news1, ...news2];
+
+  res.json(combined.slice(0, 20));
 });
 
-// simple health
-app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+// =========================
+// START SERVER
+// =========================
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, "0.0.0.0", () => console.log(`✅ Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
