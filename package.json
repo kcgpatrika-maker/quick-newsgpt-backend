@@ -1,7 +1,7 @@
 {
   "name": "quick-newsgpt-backend",
   "version": "1.0.0",
-  "description": "Quick NewsGPT backend - free scraping news",
+  "description": "Quick NewsGPT backend - RSS based news and simple Ask endpoint",
   "main": "server.mjs",
   "type": "module",
   "scripts": {
@@ -9,9 +9,8 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5",
+    "rss-parser": "^3.13.0",
     "node-fetch": "^3.3.2",
-    "cheerio": "^1.0.0-rc.12",
-    "rss-parser": "^3.13.0"
+    "cors": "^2.8.5"
   }
 }
