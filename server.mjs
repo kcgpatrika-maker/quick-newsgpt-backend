@@ -1,62 +1,63 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
-import cheerio from "cheerio";
 
 const app = express();
 app.use(cors());
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-// ----------------------------
-// Helper: Scrape news from URL
-// ----------------------------
-async function scrapeNews(url, selector, base = "") {
+// ---------------------------
+// Helper: Fetch news from API
+// ---------------------------
+async function fetchNews(query, lang = "hi") {
   try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                      "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                      "Chrome/119.0.0.0 Safari/537.36"
-      },
-      timeout: 10000
-    });
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    const results = [];
-    $(selector).each((i, el) => {
-      const title = $(el).text().trim();
-      const link = $(el).attr("href");
-      if (!title || !link) return;
-      results.push({
-        title,
-        url: link.startsWith("http") ? link : (base || url) + link,
-        source: url.replace(/^https?:\/\//, ""),
-        summary: "No summary available."
-      });
-    });
-    return results;
+    const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=${lang}&token=YOUR_API_KEY`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.articles) return [];
+    return data.articles.map(a => ({
+      title: a.title,
+      summary: a.description || "",
+      link: a.url,
+      source: a.source?.name || "Unknown",
+      publishedAt: a.publishedAt
+    }));
   } catch (err) {
-    console.log("Scrape error:", url, err.message || err);
+    console.error("Fetch error:", err);
     return [];
   }
 }
 
-// ----------------------------
-// International News
-// ----------------------------
+// ---------------------------
+// Endpoints
+// ---------------------------
 app.get("/headline/international", async (req, res) => {
-  const bbcHindi = await scrapeNews(
-    "https://www.bbc.com/hindi",
-    "a[href*='/hindi/articles']",
-    "https://www.bbc.com"
-  );
+  const news = await fetchNews("world OR international", "en");
+  res.json(news.slice(0, 20));
+});
 
-  const bbcWorld = await scrapeNews(
-    "https://www.bbc.com/news/world",
-    "a.gs-c-promo-heading",
-    "https://www.bbc.com"
-  );
+app.get("/headline/india", async (req, res) => {
+  const news = await fetchNews("india OR politics", "en");
+  res.json(news.slice(0, 20));
+});
 
-  res.json([...bbcHindi
+app.get("/headline/rajasthan", async (req, res) => {
+  const news = await fetchNews("rajasthan OR jaipur", "hi");
+  res.json(news.slice(0, 20));
+});
+
+app.get("/ask", async (req, res) => {
+  const q = req.query.q?.trim();
+  if (!q) return res.json([]);
+  const hindiResults = await fetchNews(q, "hi");
+  const engResults = await fetchNews(q, "en");
+  res.json([...hindiResults, ...engResults].slice(0, 20));
+});
+
+// ---------------------------
+// Start server
+// ---------------------------
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
