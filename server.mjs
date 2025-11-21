@@ -1,3 +1,4 @@
+// server.mjs - stable old version
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
@@ -8,56 +9,59 @@ app.use(cors());
 const PORT = process.env.PORT || 10000;
 
 // ---------------------------
-// Helper: Fetch news from API
+// Helper: Fetch news from NewsAPI (stable working free API)
 // ---------------------------
-async function fetchNews(query, lang = "hi") {
+async function fetchNews(query) {
   try {
-    const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=${lang}&token=YOUR_API_KEY`;
+    // Old working free API
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&apiKey=2a39547e93324e058ad06274cde01206`;
     const res = await fetch(url);
     const data = await res.json();
     if (!data.articles) return [];
     return data.articles.map(a => ({
       title: a.title,
-      summary: a.description || "",
-      link: a.url,
+      url: a.url,
       source: a.source?.name || "Unknown",
+      summary: a.description || "",
       publishedAt: a.publishedAt
     }));
   } catch (err) {
-    console.error("Fetch error:", err);
+    console.error("Error fetching news:", err);
     return [];
   }
 }
 
 // ---------------------------
-// Endpoints
+// Fixed category endpoints
 // ---------------------------
 app.get("/headline/international", async (req, res) => {
-  const news = await fetchNews("world OR international", "en");
+  const news = await fetchNews("world OR international");
   res.json(news.slice(0, 20));
 });
 
 app.get("/headline/india", async (req, res) => {
-  const news = await fetchNews("india OR politics", "en");
+  const news = await fetchNews("india OR bharat");
   res.json(news.slice(0, 20));
 });
 
 app.get("/headline/rajasthan", async (req, res) => {
-  const news = await fetchNews("rajasthan OR jaipur", "hi");
+  const news = await fetchNews("rajasthan OR jaipur");
   res.json(news.slice(0, 20));
 });
 
+// ---------------------------
+// Ask endpoint
+// ---------------------------
 app.get("/ask", async (req, res) => {
-  const q = req.query.q?.trim();
+  const q = req.query.q;
   if (!q) return res.json([]);
-  const hindiResults = await fetchNews(q, "hi");
-  const engResults = await fetchNews(q, "en");
-  res.json([...hindiResults, ...engResults].slice(0, 20));
+  const news = await fetchNews(q);
+  res.json(news.slice(0, 20));
 });
 
 // ---------------------------
 // Start server
 // ---------------------------
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running on port", PORT);
 });
