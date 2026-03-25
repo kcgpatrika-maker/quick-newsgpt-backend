@@ -68,7 +68,7 @@ app.get("/news", async (req, res) => {
   }
 });
 
-// /ask
+// server.js (only /ask endpoint shown for clarity)
 app.get("/ask", async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
@@ -80,8 +80,8 @@ app.get("/ask", async (req, res) => {
     const ql = q.toLowerCase();
     const matched = source.filter(
       (it) =>
-        (it.title && it.title.toLowerCase().includes(ql)) ||
-        (it.summary && it.summary.toLowerCase().includes(ql))
+        (it.title && (it.title.toLowerCase().includes(ql) || it.title.includes(q))) ||
+        (it.summary && (it.summary.toLowerCase().includes(ql) || it.summary.includes(q)))
     );
 
     return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
