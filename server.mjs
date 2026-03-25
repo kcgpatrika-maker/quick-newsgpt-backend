@@ -9,13 +9,27 @@ const parser = new Parser();
 app.use(cors());
 app.use(express.json());
 
-// RSS feeds (Hindi + English)
-const FEEDS = [
-  "https://rss.aajtak.in/rssfeed/120-India.xml",
-  "https://feeds.bbci.co.uk/hindi/rss.xml",
-  "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
-  "https://www.indiatoday.in/rss/home"
-];
+// RSS feeds (Hindi + English, category-wise)
+const FEEDS = {
+  General: [
+    "https://rss.aajtak.in/rssfeed/120-India.xml",
+    "https://feeds.bbci.co.uk/hindi/rss.xml",
+    "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
+    "https://www.indiatoday.in/rss/home"
+  ],
+  Sports: [
+    "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms", // TOI Sports
+    "https://www.espncricinfo.com/rss/content/story/feeds/0.xml" // Cricinfo
+  ],
+  Business: [
+    "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
+    "https://www.moneycontrol.com/rss/latestnews.xml"
+  ],
+  Entertainment: [
+    "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms", // TOI Entertainment
+    "https://www.bollywoodhungama.com/rss/news.xml"
+  ]
+};
 
 // fallback sample
 const FALLBACK = [
@@ -24,10 +38,10 @@ const FALLBACK = [
   { id: "n3", title: "Tech startup raises funds", summary: "A Bengaluru startup raised $5M for climate-tech product.", link: "" }
 ];
 
-// Helper: fetch & parse all feeds
-async function fetchAllFeeds() {
+// Helper: fetch & parse feeds
+async function fetchFeeds(urls) {
   let all = [];
-  for (const url of FEEDS) {
+  for (const url of urls) {
     try {
       const feed = await parser.parseURL(url);
       if (Array.isArray(feed.items)) {
@@ -54,27 +68,33 @@ app.get("/", (req, res) => {
   res.json({ message: "QuickNewsGPT backend running ✔", endpoints: ["/news", "/ask", "/custom", "/health"] });
 });
 
-// /news
+// /news → category-wise news
 app.get("/news", async (req, res) => {
   try {
-    const allNews = await fetchAllFeeds();
-    if (!allNews || allNews.length === 0) {
-      return res.json({ date: new Date().toISOString(), count: FALLBACK.length, news: FALLBACK });
+    const grouped = {};
+    for (const cat of Object.keys(FEEDS)) {
+      const items = await fetchFeeds(FEEDS[cat]);
+      grouped[cat] = items.slice(0, 2); // हर category से 2 खबरें
     }
-    return res.json({ date: new Date().toISOString(), count: allNews.length, news: allNews.slice(0, 20) });
+    return res.json({ date: new Date().toISOString(), news: grouped });
   } catch (err) {
     console.error("Error /news:", err);
     return res.status(500).json({ error: "Error fetching news", fallback: FALLBACK });
   }
 });
 
-// server.js (only /ask endpoint shown for clarity)
+// /ask → हिंदी + अंग्रेज़ी queries
 app.get("/ask", async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(400).json({ error: "Please provide a query." });
 
-    const allNews = await fetchAllFeeds();
+    // सभी feeds से news लाओ
+    let allNews = [];
+    for (const cat of Object.keys(FEEDS)) {
+      const items = await fetchFeeds(FEEDS[cat]);
+      allNews = allNews.concat(items);
+    }
     const source = (allNews && allNews.length > 0) ? allNews : FALLBACK;
 
     const ql = q.toLowerCase();
