@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // RSS feeds (Hindi + English, category-wise)
+// FEEDS object में हिंदी feeds भी जोड़ें
 const FEEDS = {
   General: [
     "https://rss.aajtak.in/rssfeed/120-India.xml",
@@ -18,16 +19,16 @@ const FEEDS = {
     "https://www.indiatoday.in/rss/home"
   ],
   Sports: [
-    "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms", // TOI Sports
-    "https://www.espncricinfo.com/rss/content/story/feeds/0.xml" // Cricinfo
+    "https://www.aajtak.in/rssfeed/227-sports.xml",   // Hindi Sports
+    "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms"
   ],
   Business: [
-    "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
-    "https://www.moneycontrol.com/rss/latestnews.xml"
+    "https://www.aajtak.in/rssfeed/228-business.xml", // Hindi Business
+    "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms"
   ],
   Entertainment: [
-    "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms", // TOI Entertainment
-    "https://www.bollywoodhungama.com/rss/news.xml"
+    "https://www.aajtak.in/rssfeed/229-entertainment.xml", // Hindi Entertainment
+    "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms"
   ]
 };
 
@@ -110,6 +111,13 @@ app.get("/ask", async (req, res) => {
     return res.status(500).json({ error: "Error searching news" });
   }
 });
+// /ask endpoint में fallback जोड़ें
+if (matched.length === 0) {
+  // अगर query "जयपुर" है तो Rajasthan category की खबरें दिखाएँ
+  if (/jaipur|jodhpur|udaipur|rajasthan/i.test(q)) {
+    return res.json({ query: q, count: (allNews.filter(n => /rajasthan/i.test(n.title)).length), news: allNews.filter(n => /rajasthan/i.test(n.title)).slice(0, 5) });
+  }
+}
 
 // /custom (User Uploaded News)
 app.get("/custom", async (req, res) => {
@@ -119,6 +127,22 @@ app.get("/custom", async (req, res) => {
   } catch (err) {
     console.error("Error /custom:", err);
     res.status(500).json({ error: "Failed to load custom news" });
+  }
+});
+
+// नया /trending endpoint
+app.get("/trending", async (req, res) => {
+  try {
+    const data = [
+      { title: "India wins crucial cricket match", link: "https://www.espncricinfo.com/" },
+      { title: "New AI policy announced by govt", link: "https://www.livemint.com/" },
+      { title: "Bollywood movie breaks box office records", link: "https://www.bollywoodhungama.com/" },
+      { title: "Global markets show recovery signs", link: "https://economictimes.indiatimes.com/" },
+      { title: "Major tech launch excites youth", link: "https://www.gadgets360.com/" }
+    ];
+    res.json({ news: data });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load trending" });
   }
 });
 
