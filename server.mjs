@@ -9,63 +9,101 @@ const parser = new Parser();
 app.use(cors());
 app.use(express.json());
 
-// RSS Feeds
-const feeds = [
-  { category: "International", url: "https://rss.cnn.com/rss/edition_world.rss" },
-  { category: "India", url: "https://feeds.bbci.co.uk/news/world/asia/india/rss.xml" },
-  { category: "Rajasthan", url: "https://rajasthanpatrika.patrika.com/rss/rajasthan.xml" },
-  { category: "Business", url: "https://feeds.bbci.co.uk/news/business/rss.xml" },
-  { category: "Sports", url: "https://feeds.bbci.co.uk/sport/rss.xml" },
-  { category: "Entertainment", url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml" }
+// RSS feeds (Hindi + English)
+const FEEDS = [
+  "https://rss.aajtak.in/rssfeed/120-India.xml",
+  "https://feeds.bbci.co.uk/hindi/rss.xml",
+  "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
+  "https://www.indiatoday.in/rss/home"
 ];
 
-// Helper: fetch RSS
-async function fetchFeed(url, category) {
-  try {
-    const feed = await parser.parseURL(url);
-    return feed.items.slice(0, 5).map((item, idx) => ({
-      id: `${category}-${idx}`,
-      category,
-      title: item.title,
-      summary: item.contentSnippet || item.content || "",
-      link: item.link,
-      source: feed.title,
-      pubDate: item.pubDate
-    }));
-  } catch {
-    return [];
+// fallback sample
+const FALLBACK = [
+  { id: "n1", title: "India launches new AI policy", summary: "Govt releases guidelines to boost AI transparency and local innovation.", link: "" },
+  { id: "n2", title: "Monsoon updates", summary: "Heavy rains expected in coastal belts; farmers advised to prepare.", link: "" },
+  { id: "n3", title: "Tech startup raises funds", summary: "A Bengaluru startup raised $5M for climate-tech product.", link: "" }
+];
+
+// Helper: fetch & parse all feeds
+async function fetchAllFeeds() {
+  let all = [];
+  for (const url of FEEDS) {
+    try {
+      const feed = await parser.parseURL(url);
+      if (Array.isArray(feed.items)) {
+        feed.items.forEach((it, idx) => {
+          all.push({
+            id: it.guid || it.id || `${url}-${idx}`,
+            title: it.title || "No title",
+            summary: it.contentSnippet || it.summary || it.content || "",
+            link: it.link || "",
+            pubDate: it.pubDate || it.isoDate || null,
+            source: new URL(url).hostname.replace("www.", "")
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Feed error:", url, err && err.message);
+    }
   }
+  return all;
 }
 
-// Endpoint: News
+// Root
+app.get("/", (req, res) => {
+  res.json({ message: "QuickNewsGPT backend running ✔", endpoints: ["/news", "/ask", "/custom", "/health"] });
+});
+
+// /news
 app.get("/news", async (req, res) => {
-  const results = {};
-  for (let f of feeds) {
-    results[f.category] = await fetchFeed(f.url, f.category);
+  try {
+    const allNews = await fetchAllFeeds();
+    if (!allNews || allNews.length === 0) {
+      return res.json({ date: new Date().toISOString(), count: FALLBACK.length, news: FALLBACK });
+    }
+    return res.json({ date: new Date().toISOString(), count: allNews.length, news: allNews.slice(0, 20) });
+  } catch (err) {
+    console.error("Error /news:", err);
+    return res.status(500).json({ error: "Error fetching news", fallback: FALLBACK });
   }
-  res.json(results);
 });
 
-// Endpoint: Ask (keyword search)
+// /ask
 app.get("/ask", async (req, res) => {
-  const q = (req.query.q || "").toLowerCase();
-  const results = [];
-  for (let f of feeds) {
-    const items = await fetchFeed(f.url, f.category);
-    results.push(...items.filter(it => it.title.toLowerCase().includes(q) || it.summary.toLowerCase().includes(q)));
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) return res.status(400).json({ error: "Please provide a query." });
+
+    const allNews = await fetchAllFeeds();
+    const source = (allNews && allNews.length > 0) ? allNews : FALLBACK;
+
+    const ql = q.toLowerCase();
+    const matched = source.filter(
+      (it) =>
+        (it.title && it.title.toLowerCase().includes(ql)) ||
+        (it.summary && it.summary.toLowerCase().includes(ql))
+    );
+
+    return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
+  } catch (err) {
+    console.error("Error /ask:", err);
+    return res.status(500).json({ error: "Error searching news" });
   }
-  res.json({ news: results });
 });
 
-// Endpoint: Custom User News
+// /custom (User Uploaded News)
 app.get("/custom", async (req, res) => {
   try {
     const data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
     res.json({ news: data });
-  } catch {
+  } catch (err) {
+    console.error("Error /custom:", err);
     res.status(500).json({ error: "Failed to load custom news" });
   }
 });
 
+// /health
+app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, "0.0.0.0", () => console.log(`âœ… Backend running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`✔ Backend running on port ${PORT}`));
