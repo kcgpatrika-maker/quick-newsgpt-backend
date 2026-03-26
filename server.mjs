@@ -11,31 +11,26 @@ app.use(express.json());
 
 // RSS feeds (Hindi + English, category-wise)
 const FEEDS = {
+  International: [
+    "https://www.jagran.com/rss/hindi-news.xml"
+  ],
   India: [
-    "https://rss.aajtak.in/rssfeed/120-India.xml",   // Hindi (AajTak)
-    "https://www.indiatoday.in/rss/home",            // English
-    "https://www.amarujala.com/rss/breaking-news.xml", // Hindi (Amar Ujala)
-    "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml" // Hindi (Hindustan)
+    "https://rss.aajtak.in/rssfeed/120-India.xml",
+    "https://www.amarujala.com/rss/breaking-news.xml",
+    "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml"
   ],
   Rajasthan: [
-    "https://ndtv.in/rss/rajasthan-news",            // Hindi (NDTV India Rajasthan)
-    "https://mhrnewsagency.com/rss/rajasthan.xml"    // Hindi (MHR News Rajasthan)
+    "https://ndtv.in/rss/rajasthan-news",
+    "https://mhrnewsagency.com/rss/rajasthan.xml"
   ],
   Sports: [
-    "https://www.aajtak.in/rssfeed/227-sports.xml",
-    "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms"
+    "https://www.aajtak.in/rssfeed/227-sports.xml"
   ],
   Business: [
-    "https://www.aajtak.in/rssfeed/228-business.xml",
-    "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms"
+    "https://www.aajtak.in/rssfeed/228-business.xml"
   ],
   Entertainment: [
-    "https://www.aajtak.in/rssfeed/229-entertainment.xml",
-    "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms"
-  ],
-  International: [
-    "https://feeds.bbci.co.uk/news/world/rss.xml",
-    "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
+    "https://www.aajtak.in/rssfeed/229-entertainment.xml"
   ]
 };
 
@@ -124,30 +119,41 @@ app.get("/ask", async (req, res) => {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(400).json({ error: "Please provide a query." });
 
-    let allNews = [];
-    for (const cat of Object.keys(FEEDS)) {
-      const items = await fetchFeeds(FEEDS[cat]);
-      allNews = allNews.concat(items);
+    // Detect script: Hindi (Devanagari) vs English (Latin)
+    const isHindi = /[\u0900-\u097F]/.test(q);
+
+    let feedsToSearch = [];
+    if (isHindi) {
+      // Hindi feeds only
+      feedsToSearch = [
+        "https://rss.aajtak.in/rssfeed/120-India.xml",
+        "https://www.amarujala.com/rss/breaking-news.xml",
+        "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml",
+        "https://ndtv.in/rss/rajasthan-news",
+        "https://www.aajtak.in/rssfeed/227-sports.xml",
+        "https://www.aajtak.in/rssfeed/228-business.xml",
+        "https://www.aajtak.in/rssfeed/229-entertainment.xml",
+        "https://www.jagran.com/rss/hindi-news.xml"
+      ];
+    } else {
+      // English feeds only
+      feedsToSearch = [
+        "https://www.indiatoday.in/rss/home",
+        "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms",
+        "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
+        "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms",
+        "https://feeds.bbci.co.uk/news/world/rss.xml"
+      ];
     }
-    const source = (allNews && allNews.length > 0) ? allNews : FALLBACK;
+
+    let allNews = await fetchFeeds(feedsToSearch);
 
     const ql = q.toLowerCase();
-    let matched = source.filter(
+    let matched = allNews.filter(
       (it) =>
         (it.title && it.title.toLowerCase().includes(ql)) ||
         (it.summary && it.summary.toLowerCase().includes(ql))
     );
-
-    // fallback logic
-    if (matched.length === 0) {
-      if (/jaipur|jodhpur|udaipur|rajasthan/i.test(q)) {
-        matched = allNews.filter(n => /rajasthan/i.test(n.title));
-      } else if (/delhi|mumbai|india|bharat/i.test(q)) {
-        matched = allNews.filter(n => /india|delhi|mumbai/i.test(n.title));
-      } else if (/world|us|china|russia/i.test(q)) {
-        matched = allNews.filter(n => /world|us|china|russia/i.test(n.title));
-      }
-    }
 
     return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
   } catch (err) {
