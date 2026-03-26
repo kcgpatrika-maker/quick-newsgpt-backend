@@ -12,25 +12,29 @@ app.use(express.json());
 // RSS feeds (Hindi + English, category-wise)
 const FEEDS = {
   International: [
-    "https://www.jagran.com/rss/hindi-news.xml"
+    "https://api.livehindustan.com/feeds/rss/international/rssfeed.xml",
+    "https://www.bbc.com/hindi/index.xml"
   ],
   India: [
-    "https://rss.aajtak.in/rssfeed/120-India.xml",
     "https://www.amarujala.com/rss/breaking-news.xml",
-    "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml"
+    "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml",
+    "https://www.bbc.com/hindi/index.xml"
   ],
   Rajasthan: [
-    "https://ndtv.in/rss/rajasthan-news",
-    "https://mhrnewsagency.com/rss/rajasthan.xml"
+    "https://www.amarujala.com/rss/rajasthan.xml",
+    "https://api.livehindustan.com/feeds/rss/rajasthan/rssfeed.xml"
   ],
   Sports: [
-    "https://www.aajtak.in/rssfeed/227-sports.xml"
+    "https://www.amarujala.com/rss/sports.xml",
+    "https://api.livehindustan.com/feeds/rss/sports/rssfeed.xml"
   ],
   Business: [
-    "https://www.aajtak.in/rssfeed/228-business.xml"
+    "https://www.amarujala.com/rss/business.xml",
+    "https://api.livehindustan.com/feeds/rss/business/rssfeed.xml"
   ],
   Entertainment: [
-    "https://www.aajtak.in/rssfeed/229-entertainment.xml"
+    "https://www.amarujala.com/rss/entertainment.xml",
+    "https://api.livehindustan.com/feeds/rss/entertainment/rssfeed.xml"
   ]
 };
 
