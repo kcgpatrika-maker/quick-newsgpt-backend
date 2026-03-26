@@ -81,39 +81,15 @@ app.get("/news", async (req, res) => {
     const grouped = {};
 
     for (const cat of Object.keys(FEEDS)) {
-      const urls = FEEDS[cat];
-
-      if (urls.length === 1) {
-        const items = await fetchFeeds(urls);
-        grouped[cat] = items.slice(0, 2);
-      } else {
-        const hindiItems = await fetchFeeds([urls[0]]);
-        const englishItems = await fetchFeeds([urls[1]]);
-
-        let finalItems = [];
-
-        // Hindi headline
-        if (hindiItems[0]) {
-          finalItems.push(hindiItems[0]);
-        } else {
-          finalItems.push({ id: "hindi-fallback", title: "हिंदी खबर उपलब्ध नहीं, fallback", link: "" });
-        }
-
-        // English headline
-        if (englishItems[0]) {
-          finalItems.push(englishItems[0]);
-        } else {
-          finalItems.push({ id: "english-fallback", title: "English news not available, fallback", link: "" });
-        }
-
-        grouped[cat] = finalItems;
-      }
+      const items = await fetchFeeds(FEEDS[cat]);
+      // सिर्फ़ हिंदी headlines, दो‑दो
+      grouped[cat] = items.slice(0, 2);
     }
 
     return res.json({ date: new Date().toISOString(), news: grouped });
   } catch (err) {
     console.error("Error /news:", err);
-    return res.status(500).json({ error: "Error fetching news", fallback: FALLBACK });
+    return res.status(500).json({ error: "Error fetching Hindi news" });
   }
 });
 
@@ -128,24 +104,15 @@ app.get("/ask", async (req, res) => {
 
     let feedsToSearch = [];
     if (isHindi) {
-      // Hindi feeds only
       feedsToSearch = [
-        "https://rss.aajtak.in/rssfeed/120-India.xml",
         "https://www.amarujala.com/rss/breaking-news.xml",
         "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml",
-        "https://ndtv.in/rss/rajasthan-news",
-        "https://www.aajtak.in/rssfeed/227-sports.xml",
-        "https://www.aajtak.in/rssfeed/228-business.xml",
-        "https://www.aajtak.in/rssfeed/229-entertainment.xml",
-        "https://www.jagran.com/rss/hindi-news.xml"
+        "https://www.bbc.com/hindi/index.xml"
       ];
     } else {
-      // English feeds only
       feedsToSearch = [
         "https://www.indiatoday.in/rss/home",
         "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms",
-        "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
-        "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms",
         "https://feeds.bbci.co.uk/news/world/rss.xml"
       ];
     }
