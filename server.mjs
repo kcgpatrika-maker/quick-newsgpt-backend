@@ -10,33 +10,37 @@ app.use(cors());
 app.use(express.json());
 
 // RSS feeds (Hindi + English, category-wise)
-// FEEDS object में हिंदी feeds भी जोड़ें
 const FEEDS = {
-  General: [
+  International: [
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
+  ],
+  India: [
     "https://rss.aajtak.in/rssfeed/120-India.xml",
-    "https://feeds.bbci.co.uk/hindi/rss.xml",
-    "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
     "https://www.indiatoday.in/rss/home"
   ],
+  Rajasthan: [
+    "https://www.rajasthanpatrika.com/rss/rajasthan-news.xml"
+  ],
   Sports: [
-    "https://www.aajtak.in/rssfeed/227-sports.xml",   // Hindi Sports
+    "https://www.aajtak.in/rssfeed/227-sports.xml",
     "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms"
   ],
   Business: [
-    "https://www.aajtak.in/rssfeed/228-business.xml", // Hindi Business
+    "https://www.aajtak.in/rssfeed/228-business.xml",
     "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms"
   ],
   Entertainment: [
-    "https://www.aajtak.in/rssfeed/229-entertainment.xml", // Hindi Entertainment
+    "https://www.aajtak.in/rssfeed/229-entertainment.xml",
     "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms"
   ]
 };
 
 // fallback sample
 const FALLBACK = [
-  { id: "n1", title: "India launches new AI policy", summary: "Govt releases guidelines to boost AI transparency and local innovation.", link: "" },
-  { id: "n2", title: "Monsoon updates", summary: "Heavy rains expected in coastal belts; farmers advised to prepare.", link: "" },
-  { id: "n3", title: "Tech startup raises funds", summary: "A Bengaluru startup raised $5M for climate-tech product.", link: "" }
+  { id: "n1", title: "India launches new AI policy", link: "" },
+  { id: "n2", title: "Monsoon updates", link: "" },
+  { id: "n3", title: "Tech startup raises funds", link: "" }
 ];
 
 // Helper: fetch & parse feeds
@@ -66,7 +70,7 @@ async function fetchFeeds(urls) {
 
 // Root
 app.get("/", (req, res) => {
-  res.json({ message: "QuickNewsGPT backend running ✔", endpoints: ["/news", "/ask", "/custom", "/health"] });
+  res.json({ message: "QuickNewsGPT backend running ✔", endpoints: ["/news", "/ask", "/custom", "/trending", "/health"] });
 });
 
 // /news → category-wise news
@@ -84,13 +88,12 @@ app.get("/news", async (req, res) => {
   }
 });
 
-// /ask → हिंदी + अंग्रेज़ी queries
+// /ask → हिंदी + अंग्रेज़ी queries + fallback
 app.get("/ask", async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(400).json({ error: "Please provide a query." });
 
-    // सभी feeds से news लाओ
     let allNews = [];
     for (const cat of Object.keys(FEEDS)) {
       const items = await fetchFeeds(FEEDS[cat]);
@@ -99,11 +102,22 @@ app.get("/ask", async (req, res) => {
     const source = (allNews && allNews.length > 0) ? allNews : FALLBACK;
 
     const ql = q.toLowerCase();
-    const matched = source.filter(
+    let matched = source.filter(
       (it) =>
-        (it.title && (it.title.toLowerCase().includes(ql) || it.title.includes(q))) ||
-        (it.summary && (it.summary.toLowerCase().includes(ql) || it.summary.includes(q)))
+        (it.title && it.title.toLowerCase().includes(ql)) ||
+        (it.summary && it.summary.toLowerCase().includes(ql))
     );
+
+    // fallback logic
+    if (matched.length === 0) {
+      if (/jaipur|jodhpur|udaipur|rajasthan/i.test(q)) {
+        matched = allNews.filter(n => /rajasthan/i.test(n.title));
+      } else if (/delhi|mumbai|india|bharat/i.test(q)) {
+        matched = allNews.filter(n => /india|delhi|mumbai/i.test(n.title));
+      } else if (/world|us|china|russia/i.test(q)) {
+        matched = allNews.filter(n => /world|us|china|russia/i.test(n.title));
+      }
+    }
 
     return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
   } catch (err) {
@@ -111,13 +125,6 @@ app.get("/ask", async (req, res) => {
     return res.status(500).json({ error: "Error searching news" });
   }
 });
-// /ask endpoint में fallback जोड़ें
-if (matched.length === 0) {
-  // अगर query "जयपुर" है तो Rajasthan category की खबरें दिखाएँ
-  if (/jaipur|jodhpur|udaipur|rajasthan/i.test(q)) {
-    return res.json({ query: q, count: (allNews.filter(n => /rajasthan/i.test(n.title)).length), news: allNews.filter(n => /rajasthan/i.test(n.title)).slice(0, 5) });
-  }
-}
 
 // /custom (User Uploaded News)
 app.get("/custom", async (req, res) => {
@@ -130,7 +137,7 @@ app.get("/custom", async (req, res) => {
   }
 });
 
-// नया /trending endpoint
+// /trending
 app.get("/trending", async (req, res) => {
   try {
     const data = [
