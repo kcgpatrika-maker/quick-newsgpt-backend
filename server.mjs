@@ -74,13 +74,31 @@ app.get("/", (req, res) => {
 });
 
 // /news → category-wise news
+// /news → category-wise news (alternate Hindi + English)
 app.get("/news", async (req, res) => {
   try {
     const grouped = {};
+
     for (const cat of Object.keys(FEEDS)) {
-      const items = await fetchFeeds(FEEDS[cat]);
-      grouped[cat] = items.slice(0, 2); // हर category से 2 खबरें
+      const urls = FEEDS[cat];
+
+      // अगर category में सिर्फ़ एक feed है → normal fetch
+      if (urls.length === 1) {
+        const items = await fetchFeeds(urls);
+        grouped[cat] = items.slice(0, 2);
+      } else {
+        // Hindi feed = पहला URL, English feed = दूसरा URL
+        const hindiItems = await fetchFeeds([urls[0]]);
+        const englishItems = await fetchFeeds([urls[1]]);
+
+        // Alternate logic: पहले Hindi, फिर English
+        grouped[cat] = [
+          hindiItems[0] || englishItems[0],   // अगर Hindi नहीं है तो English
+          englishItems[0] || hindiItems[1]    // अगर English नहीं है तो Hindi
+        ].filter(Boolean); // null values हटाएँ
+      }
     }
+
     return res.json({ date: new Date().toISOString(), news: grouped });
   } catch (err) {
     console.error("Error /news:", err);
