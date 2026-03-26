@@ -11,16 +11,15 @@ app.use(express.json());
 
 // RSS feeds (Hindi + English, category-wise)
 const FEEDS = {
-  International: [
-    "https://feeds.bbci.co.uk/news/world/rss.xml",
-    "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
-  ],
   India: [
-    "https://rss.aajtak.in/rssfeed/120-India.xml",
-    "https://www.indiatoday.in/rss/home"
+    "https://rss.aajtak.in/rssfeed/120-India.xml",   // Hindi (AajTak)
+    "https://www.indiatoday.in/rss/home",            // English
+    "https://www.amarujala.com/rss/breaking-news.xml", // Hindi (Amar Ujala)
+    "https://api.livehindustan.com/feeds/rss/latest/rssfeed.xml" // Hindi (Hindustan)
   ],
   Rajasthan: [
-    "https://www.rajasthanpatrika.com/rss/rajasthan-news.xml"
+    "https://ndtv.in/rss/rajasthan-news",            // Hindi (NDTV India Rajasthan)
+    "https://mhrnewsagency.com/rss/rajasthan.xml"    // Hindi (MHR News Rajasthan)
   ],
   Sports: [
     "https://www.aajtak.in/rssfeed/227-sports.xml",
@@ -33,6 +32,10 @@ const FEEDS = {
   Entertainment: [
     "https://www.aajtak.in/rssfeed/229-entertainment.xml",
     "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms"
+  ],
+  International: [
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
   ]
 };
 
