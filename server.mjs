@@ -76,8 +76,7 @@ app.get("/", (req, res) => {
   res.json({ message: "QuickNewsGPT backend running ✔", endpoints: ["/news", "/ask", "/custom", "/trending", "/health"] });
 });
 
-// /news → category-wise news
-// /news → category-wise news (alternate Hindi + English)
+// /news → category-wise news (alternate Hindi + English, safe fallback)
 app.get("/news", async (req, res) => {
   try {
     const grouped = {};
@@ -85,20 +84,30 @@ app.get("/news", async (req, res) => {
     for (const cat of Object.keys(FEEDS)) {
       const urls = FEEDS[cat];
 
-      // अगर category में सिर्फ़ एक feed है → normal fetch
       if (urls.length === 1) {
         const items = await fetchFeeds(urls);
         grouped[cat] = items.slice(0, 2);
       } else {
-        // Hindi feed = पहला URL, English feed = दूसरा URL
         const hindiItems = await fetchFeeds([urls[0]]);
         const englishItems = await fetchFeeds([urls[1]]);
 
-        // Alternate logic: पहले Hindi, फिर English
-        grouped[cat] = [
-          hindiItems[0] || englishItems[0],   // अगर Hindi नहीं है तो English
-          englishItems[0] || hindiItems[1]    // अगर English नहीं है तो Hindi
-        ].filter(Boolean); // null values हटाएँ
+        let finalItems = [];
+
+        // Hindi headline
+        if (hindiItems[0]) {
+          finalItems.push(hindiItems[0]);
+        } else {
+          finalItems.push({ id: "hindi-fallback", title: "हिंदी खबर उपलब्ध नहीं, fallback", link: "" });
+        }
+
+        // English headline
+        if (englishItems[0]) {
+          finalItems.push(englishItems[0]);
+        } else {
+          finalItems.push({ id: "english-fallback", title: "English news not available, fallback", link: "" });
+        }
+
+        grouped[cat] = finalItems;
       }
     }
 
