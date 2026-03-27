@@ -93,11 +93,35 @@ app.get("/news", async (req, res) => {
   }
 });
 
-// /ask → हिंदी + अंग्रेज़ी queries + fallback
+// /ask → controlled keywords only
 app.get("/ask", async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(400).json({ error: "Please provide a query." });
+
+    const ql = q.toLowerCase();
+
+    // Allowed keyword sets
+    const cities = ["जयपुर","दिल्ली","मुंबई","दौसा","कोटा","लखनऊ"];
+    const statesCountries = ["राजस्थान","उत्तर प्रदेश","भारत","अमेरिका","ईरान","चीन"];
+    const incidents = ["आग","बाढ़","सड़क हादसा","भूकंप","तूफ़ान"];
+    const topics = ["क्रिकेट","ipl","शेयर बाजार","फिल्म","त्योहार"];
+
+    // Check if query belongs to allowed sets
+    const isAllowed =
+      cities.includes(ql) ||
+      statesCountries.includes(ql) ||
+      incidents.includes(ql) ||
+      topics.includes(ql);
+
+    if (!isAllowed) {
+      return res.json({
+        query: q,
+        count: 0,
+        news: [],
+        message: "कृपया शहर, राज्य/देश, घटना या विषय का नाम लिखें।"
+      });
+    }
 
     // Detect script: Hindi (Devanagari) vs English (Latin)
     const isHindi = /[\u0900-\u097F]/.test(q);
@@ -119,7 +143,6 @@ app.get("/ask", async (req, res) => {
 
     let allNews = await fetchFeeds(feedsToSearch);
 
-    const ql = q.toLowerCase();
     let matched = allNews.filter(
       (it) =>
         (it.title && it.title.toLowerCase().includes(ql)) ||
