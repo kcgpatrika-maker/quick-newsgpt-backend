@@ -102,13 +102,27 @@ app.get("/ask", async (req, res) => {
     const q = (req.query.q || "").trim();
     if (!q) return res.status(400).json({ error: "Please provide a query." });
 
-    const ql = q.toLowerCase();
     const isHindi = /[\u0900-\u097F]/.test(q);
 
     // Allowed keyword sets
-    const cities = ["जयपुर","दिल्ली","मुंबई","दौसा","कोटा","लखनऊ"];
-    const statesCountries = ["राजस्थान","उत्तर प्रदेश","भारत","अमेरिका","ईरान","चीन"];
-    const topics = ["क्रिकेट","ipl","शेयर बाजार","फिल्म","त्योहार"];
+const cities = [
+  "जयपुर","दिल्ली","मुंबई","दौसा","कोटा","लखनऊ",
+  "उदयपुर","भोपाल","पुणे","चेन्नई","हैदराबाद","बेंगलुरु"
+];
+
+const statesCountries = [
+  "राजस्थान","उत्तर प्रदेश","मध्य प्रदेश","महाराष्ट्र","गुजरात",
+  "भारत","अमेरिका","ईरान","चीन","पाकिस्तान","बांग्लादेश","नेपाल","इसराइल"
+];
+
+const topics = [
+  "क्रिकेट","ipl","शेयर बाजार","फिल्म","त्योहार","राजनीति","चुनाव","आर्थिक संकट"
+];
+
+const leaders = [
+  "मोदी","नरेंद्र मोदी","प्रधानमंत्री","ट्रंप","डोनाल्ड ट्रंप","राष्ट्रपति",
+  "जो बाइडेन","मुख्यमंत्री","गृह मंत्री","विदेश मंत्री"
+];
 
     let feedsToSearch = isHindi
       ? [
@@ -124,36 +138,50 @@ app.get("/ask", async (req, res) => {
 
     let allNews = await fetchFeeds(feedsToSearch);
 
+    // Normalize function
     function normalize(text) {
-  return (text || "")
-    .toLowerCase()
-    .replace(/[.,;:!?()'"“”‘’]/g, "")
-    .trim();
-}
+      return (text || "")
+        .toLowerCase()
+        .replace(/[.,;:!?()'"“”‘’]/g, "")
+        .trim();
+    }
 
-const qNorm = normalize(q);
+    const qNorm = normalize(q);
 
-// Step 1: headlines में खोजें
-let matched = allNews.filter((it) => {
-  const title = normalize(it.title);
-  return title.includes(qNorm);
-});
+    // Expand query with keyword sets
+    let qVariants = [qNorm];
+    [...cities, ...statesCountries, ...topics].forEach((kw) => {
+      if (qNorm.includes(normalize(kw))) {
+        qVariants.push(normalize(kw));
+      }
+    });
 
-// Step 2: अगर headlines में नहीं मिला तो summaries में खोजें
-if (matched.length === 0) {
-  matched = allNews.filter((it) => {
-    const summary = normalize(it.summary);
-    const description = normalize(it.description);
-    const content = normalize(it.content);
-return (
-          summary.includes(qNorm) ||
-          description.includes(qNorm) ||
-          content.includes(qNorm)
+    // Step 1: headlines में खोजें
+    let matched = allNews.filter((it) => {
+      const title = normalize(it.title);
+      return qVariants.some((kw) => title.includes(kw));
+    });
+
+    // Step 2: अगर headlines में नहीं मिला तो summaries/description/contentSnippet में खोजें
+    if (matched.length === 0) {
+      matched = allNews.filter((it) => {
+        const summary = normalize(it.summary);
+        const description = normalize(it.description);
+        const content = normalize(it.contentSnippet || it.content);
+        return qVariants.some(
+          (kw) =>
+            summary.includes(kw) ||
+            description.includes(kw) ||
+            content.includes(kw)
         );
       });
     }
 
-    return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
+    return res.json({
+      query: q,
+      count: matched.length,
+      news: matched.slice(0, 20)
+    });
   } catch (err) {
     console.error("Error /ask:", err);
     return res.status(500).json({ error: "Error searching news" });
