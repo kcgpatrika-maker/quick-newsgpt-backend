@@ -42,6 +42,12 @@ const FEEDS = {
     "https://www.bollywoodhungama.com/rss/news.xml"
   ]
 };
+// fallback sample
+const FALLBACK = [
+  { id: "n1", title: "India launches new AI policy", link: "" },
+  { id: "n2", title: "Monsoon updates", link: "" },
+  { id: "n3", title: "Tech startup raises funds", link: "" }
+];
 
 // Helper: fetch & parse feeds
 async function fetchFeeds(urls) {
@@ -68,13 +74,18 @@ async function fetchFeeds(urls) {
   return all;
 }
 
-// /news → category-wise news
+// Root
+app.get("/", (req, res) => {
+  res.json({ message: "QuickNewsGPT backend running ✔", endpoints: ["/news", "/ask", "/custom", "/trending", "/health"] });
+});
+
+// /news → category-wise news (alternate Hindi + English, safe fallback)
 app.get("/news", async (req, res) => {
   try {
     const grouped = {};
     for (const cat of Object.keys(FEEDS)) {
       const items = await fetchFeeds(FEEDS[cat]);
-      grouped[cat] = items.slice(0, 4); // अब 4 headlines दिखेंगी
+      grouped[cat] = items.slice(0, 2); // सिर्फ़ हिंदी headlines, 2-2 headlines दिखेंगी
     }
     return res.json({ date: new Date().toISOString(), news: grouped });
   } catch (err) {
@@ -91,6 +102,12 @@ app.get("/ask", async (req, res) => {
 
     const ql = q.toLowerCase();
     const isHindi = /[\u0900-\u097F]/.test(q);
+
+    // Allowed keyword sets
+    const cities = ["जयपुर","दिल्ली","मुंबई","दौसा","कोटा","लखनऊ"];
+    const statesCountries = ["राजस्थान","उत्तर प्रदेश","भारत","अमेरिका","ईरान","चीन"];
+    const Persons and posts = ["मोदी","प्रधानमंत्री","पीएम","नरेन्द्र मोदी","सीएम"];
+    const topics = ["क्रिकेट","ipl","शेयर बाजार","फिल्म","त्योहार"];
 
     let feedsToSearch = isHindi
       ? [
