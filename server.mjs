@@ -106,19 +106,34 @@ app.get("/ask", async (req, res) => {
 
     let allNews = await fetchFeeds(feedsToSearch);
 
-    // Step 1: पहले headline/title में खोजें
-let matched = allNews.filter(
-  (it) => it.title && it.title.toLowerCase().includes(ql)
-);
-
-// Step 2: अगर headline में नहीं मिला तो summary/content में खोजें
-if (matched.length === 0) {
-  matched = allNews.filter(
-    (it) =>
-      (it.summary && it.summary.toLowerCase().includes(ql)) ||
-      (it.content && it.content.toLowerCase().includes(ql))
-  );
+    function normalize(text) {
+  return (text || "")
+    .toLowerCase()
+    .replace(/[.,;:!?()'"“”‘’]/g, "")
+    .trim();
 }
+
+const qNorm = normalize(q);
+
+// Step 1: headlines में खोजें
+let matched = allNews.filter((it) => {
+  const title = normalize(it.title);
+  return title.includes(qNorm);
+});
+
+// Step 2: अगर headlines में नहीं मिला तो summaries में खोजें
+if (matched.length === 0) {
+  matched = allNews.filter((it) => {
+    const summary = normalize(it.summary);
+    const description = normalize(it.description);
+    const content = normalize(it.content);
+return (
+          summary.includes(qNorm) ||
+          description.includes(qNorm) ||
+          content.includes(qNorm)
+        );
+      });
+    }
 
     return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
   } catch (err) {
