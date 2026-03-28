@@ -106,11 +106,19 @@ app.get("/ask", async (req, res) => {
 
     let allNews = await fetchFeeds(feedsToSearch);
 
-    let matched = allNews.filter(
-      (it) =>
-        (it.title && it.title.toLowerCase().includes(ql)) ||
-        (it.summary && it.summary.toLowerCase().includes(ql))
-    );
+    // Step 1: पहले headline/title में खोजें
+let matched = allNews.filter(
+  (it) => it.title && it.title.toLowerCase().includes(ql)
+);
+
+// Step 2: अगर headline में नहीं मिला तो summary/content में खोजें
+if (matched.length === 0) {
+  matched = allNews.filter(
+    (it) =>
+      (it.summary && it.summary.toLowerCase().includes(ql)) ||
+      (it.content && it.content.toLowerCase().includes(ql))
+  );
+}
 
     return res.json({ query: q, count: matched.length, news: matched.slice(0, 20) });
   } catch (err) {
@@ -119,4 +127,35 @@ app.get("/ask", async (req, res) => {
   }
 });
 
-// बाकी endpoints unchanged...
+// /custom (User Uploaded News)
+app.get("/custom", async (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+    res.json({ news: data });
+  } catch (err) {
+    console.error("Error /custom:", err);
+    res.status(500).json({ error: "Failed to load custom news" });
+  }
+});
+
+// /trending
+app.get("/trending", async (req, res) => {
+  try {
+    const data = [
+      { title: "India wins crucial cricket match", link: "https://www.espncricinfo.com/" },
+      { title: "New AI policy announced by govt", link: "https://www.livemint.com/" },
+      { title: "Bollywood movie breaks box office records", link: "https://www.bollywoodhungama.com/" },
+      { title: "Global markets show recovery signs", link: "https://economictimes.indiatimes.com/" },
+      { title: "Major tech launch excites youth", link: "https://www.gadgets360.com/" }
+    ];
+    res.json({ news: data });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load trending" });
+  }
+});
+
+// /health
+app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, "0.0.0.0", () => console.log(`✔ Backend running on port ${PORT}`));
