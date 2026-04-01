@@ -9,6 +9,8 @@ const parser = new Parser();
 app.use(cors());
 app.use(express.json());
 
+const ADMIN_PIN = "1336";
+
 // RSS feeds (Hindi + English, category-wise)
 const FEEDS = {
   International: [
@@ -197,6 +199,37 @@ app.get("/custom", async (req, res) => {
     console.error("Error /custom:", err);
     res.status(500).json({ error: "Failed to load custom news" });
   }
+});
+
+app.post("/custom/add", (req, res) => {
+  const { title, pin } = req.body;
+  if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
+
+  const data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+  const newItem = { id: `c${Date.now()}`, title, link: "", summary: "" };
+  data.push(newItem);
+  fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
+  res.json({ success: true, item: newItem });
+});
+
+app.put("/custom/edit/:id", (req, res) => {
+  const { title, pin } = req.body;
+  if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
+
+  let data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+  data = data.map(it => it.id === req.params.id ? { ...it, title } : it);
+  fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
+  res.json({ success: true });
+});
+
+app.delete("/custom/delete/:id", (req, res) => {
+  const { pin } = req.body;
+  if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
+
+  let data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+  data = data.filter(it => it.id !== req.params.id);
+  fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
+  res.json({ success: true });
 });
 
 // /trending
