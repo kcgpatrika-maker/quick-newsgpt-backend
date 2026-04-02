@@ -201,17 +201,35 @@ app.get("/custom", async (req, res) => {
   }
 });
 
+// Add custom news
 app.post("/custom/add", (req, res) => {
   const { title, pin } = req.body;
   if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
 
-  const data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
-  const newItem = { id: `c${Date.now()}`, title, link: "", summary: "" };
+  let data = [];
+  try {
+    data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+  } catch (err) {
+    data = [];
+  }
+
+  const newItem = {
+    id: `c${Date.now()}`,
+    title,
+    summary: "",
+    link: "",
+    source: "User Upload",
+    pubDate: new Date().toISOString().split("T")[0],
+    image: ""
+  };
+
   data.push(newItem);
   fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
-  res.json({ success: true, item: newItem });
+
+  res.json({ success: true, news: data });
 });
 
+// Edit custom news
 app.put("/custom/edit/:id", (req, res) => {
   const { title, pin } = req.body;
   if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
@@ -219,9 +237,11 @@ app.put("/custom/edit/:id", (req, res) => {
   let data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
   data = data.map(it => it.id === req.params.id ? { ...it, title } : it);
   fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
-  res.json({ success: true });
+
+  res.json({ success: true, news: data });
 });
 
+// Delete custom news
 app.delete("/custom/delete/:id", (req, res) => {
   const { pin } = req.body;
   if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
@@ -229,7 +249,8 @@ app.delete("/custom/delete/:id", (req, res) => {
   let data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
   data = data.filter(it => it.id !== req.params.id);
   fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
-  res.json({ success: true });
+
+  res.json({ success: true, news: data });
 });
 
 // /trending
