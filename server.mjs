@@ -216,7 +216,7 @@ app.post("/custom/add", (req, res) => {
   const newItem = {
     id: `c${Date.now()}`,
     title,
-    summary: "",
+    summary: summary, // नई खबर का पूरा content
     link: "",
     source: "User Upload",
     pubDate: new Date().toISOString().split("T")[0],
