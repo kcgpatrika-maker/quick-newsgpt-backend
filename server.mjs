@@ -203,7 +203,7 @@ app.get("/custom", async (req, res) => {
 
 // Add custom news
 app.post("/custom/add", (req, res) => {
-  const { title, pin } = req.body;
+  const { title, summary, pin } = req.body;
   if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
 
   let data = [];
