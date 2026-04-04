@@ -193,7 +193,7 @@ const leaders = [
 // /custom (User Uploaded News)
 app.get("/custom", async (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+    const data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
     res.json({ news: data });
   } catch (err) {
     console.error("Error /custom:", err);
@@ -208,7 +208,7 @@ app.post("/custom/add", (req, res) => {
 
   let data = [];
   try {
-    data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+    data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
   } catch (err) {
     data = [];
   }
@@ -224,7 +224,7 @@ app.post("/custom/add", (req, res) => {
   };
 
   data.push(newItem);
-  fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
+  fs.writeFileSync("./custom-news.json", JSON.stringify(data, null, 2));
 
   res.json({ success: true, news: data });
 });
@@ -234,9 +234,9 @@ app.put("/custom/edit/:id", (req, res) => {
   const { title, pin } = req.body;
   if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
 
-  let data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+  let data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
   data = data.map(it => it.id === req.params.id ? { ...it, title } : it);
-  fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
+  fs.writeFileSync("./custom-news.json", JSON.stringify(data, null, 2));
 
   res.json({ success: true, news: data });
 });
@@ -246,9 +246,9 @@ app.delete("/custom/delete/:id", (req, res) => {
   const { pin } = req.body;
   if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
 
-  let data = JSON.parse(fs.readFileSync("./public/custom-news.json", "utf-8"));
+  let data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
   data = data.filter(it => it.id !== req.params.id);
-  fs.writeFileSync("./public/custom-news.json", JSON.stringify(data, null, 2));
+  fs.writeFileSync("./custom-news.json", JSON.stringify(data, null, 2));
 
   res.json({ success: true, news: data });
 });
