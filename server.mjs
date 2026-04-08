@@ -253,19 +253,20 @@ app.delete("/custom/delete/:id", (req, res) => {
   res.json({ success: true, news: data });
 });
 
-// /trending
-app.get("/trending", async (req, res) => {
+// /goldsilver → Gold & Silver rates
+app.get("/goldsilver", async (req, res) => {
   try {
-    const data = [
-      { title: "India wins crucial cricket match", link: "https://www.espncricinfo.com/" },
-      { title: "New AI policy announced by govt", link: "https://www.livemint.com/" },
-      { title: "Bollywood movie breaks box office records", link: "https://www.bollywoodhungama.com/" },
-      { title: "Global markets show recovery signs", link: "https://economictimes.indiatimes.com/" },
-      { title: "Major tech launch excites youth", link: "https://www.gadgets360.com/" }
-    ];
-    res.json({ news: data });
+    const items = await fetchFeeds(FEEDS["Business"]);
+    // Filter only gold/silver related headlines
+    const filtered = items.filter(it => {
+      const t = (it.title || "").toLowerCase();
+      return t.includes("gold") || t.includes("silver") || t.includes("सोना") || t.includes("चांदी");
+    });
+
+    res.json({ date: new Date().toISOString(), rates: filtered.slice(0, 5) });
   } catch (err) {
-    res.status(500).json({ error: "Failed to load trending" });
+    console.error("Error /goldsilver:", err);
+    res.status(500).json({ error: "Failed to load gold/silver rates" });
   }
 });
 
