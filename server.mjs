@@ -253,17 +253,29 @@ app.delete("/custom/delete/:id", (req, res) => {
   res.json({ success: true, news: data });
 });
 
-// /goldsilver → Gold & Silver rates
+// GoldSilver endpoint
 app.get("/goldsilver", async (req, res) => {
   try {
-    const items = await fetchFeeds(FEEDS["Business"]);
-    // Filter only gold/silver related headlines
-    const filtered = items.filter(it => {
-      const t = (it.title || "").toLowerCase();
-      return t.includes("gold") || t.includes("silver") || t.includes("सोना") || t.includes("चांदी");
-    });
+    // 👉 असली rates API से data लेना होगा
+    // यहाँ demo data दिया है (आप चाहें तो किसी bullion API से connect कर सकते हैं)
+    const goldRates = {
+      "24K": "₹72,500 / 10g",
+      "22K": "₹66,500 / 10g",
+      "18K": "₹54,000 / 10g",
+      "Jewellery": "₹67,200 / 10g"
+    };
 
-    res.json({ date: new Date().toISOString(), rates: filtered.slice(0, 5) });
+    const silverRates = {
+      "1kg": "₹82,000",
+      "100g": "₹8,200",
+      "10g": "₹820"
+    };
+
+    res.json({
+      date: new Date().toISOString(),
+      gold: goldRates,
+      silver: silverRates
+    });
   } catch (err) {
     console.error("Error /goldsilver:", err);
     res.status(500).json({ error: "Failed to load gold/silver rates" });
