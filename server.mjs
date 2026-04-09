@@ -256,33 +256,41 @@ app.delete("/custom/delete/:id", (req, res) => {
 // GoldSilver endpoint
 app.get("/goldsilver", async (req, res) => {
   try {
-    const apiKey = process.env.GOLD_API_KEY; // अपनी API key .env में रखें
-    const goldRes = await fetch("https://www.goldapi.io/api/XAU/INR", {
-      headers: { "x-access-token": apiKey }
-    });
-    const silverRes = await fetch("https://www.goldapi.io/api/XAG/INR", {
-      headers: { "x-access-token": apiKey }
-    });
+    const url = "https://bullions.co.in/";
+    const response = await fetch(url);
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-    const goldData = await goldRes.json();
-    const silverData = await silverRes.json();
+    // Gold section
+    const goldPrice = $("div#gold .price").text().trim();
+    const goldChange = $("div#gold .change").text().trim();
+    const goldPercent = $("div#gold .percent").text().trim();
+    const goldUnit = $("div#gold .unit").text().trim();
+
+    // Silver section
+    const silverPrice = $("div#silver .price").text().trim();
+    const silverChange = $("div#silver .change").text().trim();
+    const silverPercent = $("div#silver .percent").text().trim();
+    const silverUnit = $("div#silver .unit").text().trim();
 
     res.json({
       date: new Date().toISOString(),
       gold: {
-        "24K": `₹${goldData.price_gram_24k} / g`,
-        "22K": `₹${goldData.price_gram_22k} / g`,
-        "18K": `₹${goldData.price_gram_18k} / g`
+        price: goldPrice,
+        change: goldChange,
+        percent: goldPercent,
+        unit: goldUnit
       },
       silver: {
-        "1kg": `₹${silverData.price_kg}`,
-        "100g": `₹${(silverData.price_kg / 10).toFixed(0)}`,
-        "10g": `₹${(silverData.price_kg / 100).toFixed(0)}`
+        price: silverPrice,
+        change: silverChange,
+        percent: silverPercent,
+        unit: silverUnit
       }
     });
   } catch (err) {
-    console.error("Error fetching rates:", err);
-    res.status(500).json({ error: "Failed to fetch live rates" });
+    console.error("Scraping error:", err);
+    res.status(500).json({ error: "Failed to fetch rates" });
   }
 });
 
