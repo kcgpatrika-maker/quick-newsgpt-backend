@@ -253,44 +253,27 @@ app.delete("/custom/delete/:id", (req, res) => {
   res.json({ success: true, news: data });
 });
 
-// GoldSilver endpoint
+// GoldSilver endpoint using RSS feeds
 app.get("/goldsilver", async (req, res) => {
   try {
-    const url = "https://bullions.co.in/";
-    const response = await fetch(url);
-    const html = await response.text();
-    const $ = cheerio.load(html);
+    // Use Livemint RSS feed (markets)
+    const feed = await parser.parseURL("https://www.livemint.com/rss/markets");
 
-    // Gold section
-    const goldPrice = $("div#gold .price").text().trim();
-    const goldChange = $("div#gold .change").text().trim();
-    const goldPercent = $("div#gold .percent").text().trim();
-    const goldUnit = $("div#gold .unit").text().trim();
-
-    // Silver section
-    const silverPrice = $("div#silver .price").text().trim();
-    const silverChange = $("div#silver .change").text().trim();
-    const silverPercent = $("div#silver .percent").text().trim();
-    const silverUnit = $("div#silver .unit").text().trim();
+    // Find first item with Gold or Silver in title
+    const item = feed.items.find(
+      (news) =>
+        news.title.toLowerCase().includes("gold") ||
+        news.title.toLowerCase().includes("silver")
+    );
 
     res.json({
       date: new Date().toISOString(),
-      gold: {
-        price: goldPrice,
-        change: goldChange,
-        percent: goldPercent,
-        unit: goldUnit
-      },
-      silver: {
-        price: silverPrice,
-        change: silverChange,
-        percent: silverPercent,
-        unit: silverUnit
-      }
+      gold: item ? `Gold price today - ${item.title}` : "Gold update not found",
+      silver: item ? `Silver price today - ${item.title}` : "Silver update not found"
     });
   } catch (err) {
-    console.error("Scraping error:", err);
-    res.status(500).json({ error: "Failed to fetch rates" });
+    console.error("RSS error:", err);
+    res.status(500).json({ error: "Failed to fetch RSS feed" });
   }
 });
 
