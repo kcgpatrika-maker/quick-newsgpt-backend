@@ -256,20 +256,21 @@ app.delete("/custom/delete/:id", (req, res) => {
 // GoldSilver endpoint using RSS feeds
 app.get("/goldsilver", async (req, res) => {
   try {
-    // Use Livemint RSS feed (markets)
+    // Livemint RSS feed (markets)
     const feed = await parser.parseURL("https://www.livemint.com/rss/markets");
 
-    // Find first item with Gold or Silver in title
-    const item = feed.items.find(
-      (news) =>
-        news.title.toLowerCase().includes("gold") ||
-        news.title.toLowerCase().includes("silver")
+    // Headlines में Gold और Silver खोजें
+    const goldItem = feed.items.find((news) =>
+      news.title.toLowerCase().includes("gold")
+    );
+    const silverItem = feed.items.find((news) =>
+      news.title.toLowerCase().includes("silver")
     );
 
     res.json({
       date: new Date().toISOString(),
-      gold: item ? `Gold price today - ${item.title}` : "Gold update not found",
-      silver: item ? `Silver price today - ${item.title}` : "Silver update not found"
+      gold: goldItem ? `Gold price today - ${goldItem.title}` : "Gold update not found",
+      silver: silverItem ? `Silver price today - ${silverItem.title}` : "Silver update not found"
     });
   } catch (err) {
     console.error("RSS error:", err);
