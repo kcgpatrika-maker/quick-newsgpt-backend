@@ -256,29 +256,33 @@ app.delete("/custom/delete/:id", (req, res) => {
 // GoldSilver endpoint
 app.get("/goldsilver", async (req, res) => {
   try {
-    // 👉 असली rates API से data लेना होगा
-    // यहाँ demo data दिया है (आप चाहें तो किसी bullion API से connect कर सकते हैं)
-    const goldRates = {
-      "24K": "₹72,500 / 10g",
-      "22K": "₹66,500 / 10g",
-      "18K": "₹54,000 / 10g",
-      "Jewellery": "₹67,200 / 10g"
-    };
+    const apiKey = process.env.GOLD_API_KEY; // अपनी API key .env में रखें
+    const goldRes = await fetch("https://www.goldapi.io/api/XAU/INR", {
+      headers: { "x-access-token": apiKey }
+    });
+    const silverRes = await fetch("https://www.goldapi.io/api/XAG/INR", {
+      headers: { "x-access-token": apiKey }
+    });
 
-    const silverRates = {
-      "1kg": "₹82,000",
-      "100g": "₹8,200",
-      "10g": "₹820"
-    };
+    const goldData = await goldRes.json();
+    const silverData = await silverRes.json();
 
     res.json({
       date: new Date().toISOString(),
-      gold: goldRates,
-      silver: silverRates
+      gold: {
+        "24K": `₹${goldData.price_gram_24k} / g`,
+        "22K": `₹${goldData.price_gram_22k} / g`,
+        "18K": `₹${goldData.price_gram_18k} / g`
+      },
+      silver: {
+        "1kg": `₹${silverData.price_kg}`,
+        "100g": `₹${(silverData.price_kg / 10).toFixed(0)}`,
+        "10g": `₹${(silverData.price_kg / 100).toFixed(0)}`
+      }
     });
   } catch (err) {
-    console.error("Error /goldsilver:", err);
-    res.status(500).json({ error: "Failed to load gold/silver rates" });
+    console.error("Error fetching rates:", err);
+    res.status(500).json({ error: "Failed to fetch live rates" });
   }
 });
 
