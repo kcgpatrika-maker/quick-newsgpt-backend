@@ -190,25 +190,46 @@ const leaders = [
   }
 });
 
-// GoldSilver endpoint (static/demo JSON)
+// Gold & Silver RSS endpoint
 app.get("/goldsilver", async (req, res) => {
   try {
+    const feedUrl = "https://www.oneindia.com/rss/business.xml"; // OneIndia Business RSS
+    const feed = await parser.parseURL(feedUrl);
+
+    // पहला item लीजिए जिसमें गोल्ड-सिल्वर का डेटा होता है
+    const item = feed.items.find(i =>
+      i.title.toLowerCase().includes("gold") || i.title.toLowerCase().includes("silver")
+    );
+
+    if (!item) {
+      return res.json({ error: "No gold/silver data found in RSS" });
+    }
+
+    // description से rates निकालना (सिंपल regex / split से)
+    const desc = item.description;
+
+    // उदाहरण regex (आपके दिए टेबल के हिसाब से)
+    const gold24 = desc.match(/24K[^₹]*₹([\d,]+)/);
+    const gold22 = desc.match(/22K[^₹]*₹([\d,]+)/);
+    const silverGram = desc.match(/Per Gram[^₹]*₹([\d,.]+)/);
+    const silver10 = desc.match(/Per 10 Grams[^₹]*₹([\d,.]+)/);
+    const silverKg = desc.match(/Per KG[^₹]*₹([\d,.]+)/);
+
     res.json({
-      date: new Date().toISOString(),
+      source: "OneIndia RSS",
+      date: item.pubDate,
       gold: {
-        "24K": "₹15,148/gm",
-        "22K": "₹13,885/gm",
-        "18K": "₹11,361/gm",
-        "jewellery": "₹13,885/gm + GST + making charges"
+        "24K": gold24 ? `₹${gold24[1]}/gm` : "N/A",
+        "22K": gold22 ? `₹${gold22[1]}/gm` : "N/A"
       },
       silver: {
-        "10gm": "₹2,550",
-        "100gm": "₹25,500",
-        "1kg": "₹2,55,000"
+        "1gm": silverGram ? `₹${silverGram[1]}` : "N/A",
+        "10gm": silver10 ? `₹${silver10[1]}` : "N/A",
+        "1kg": silverKg ? `₹${silverKg[1]}` : "N/A"
       }
     });
   } catch (err) {
-    console.error("GoldSilver error:", err);
+    console.error("GoldSilver RSS error:", err);
     res.status(500).json({ error: "Failed to fetch gold/silver rates" });
   }
 });
