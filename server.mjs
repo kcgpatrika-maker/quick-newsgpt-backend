@@ -209,11 +209,12 @@ app.get("/goldsilver", async (req, res) => {
     const desc = item.description;
 
     // उदाहरण regex (आपके दिए टेबल के हिसाब से)
-    const gold24 = desc.match(/24K[^₹]*₹([\d,]+)/);
-    const gold22 = desc.match(/22K[^₹]*₹([\d,]+)/);
-    const silverGram = desc.match(/Per Gram[^₹]*₹([\d,.]+)/);
-    const silver10 = desc.match(/Per 10 Grams[^₹]*₹([\d,.]+)/);
-    const silverKg = desc.match(/Per KG[^₹]*₹([\d,.]+)/);
+    const gold24 = desc.match(/24K[^₹]*₹?\s*([\d,]+)/i);
+    const gold22 = desc.match(/22K[^₹]*₹?\s*([\d,]+)/i);
+    const gold18 = desc.match(/18K[^₹]*₹?\s*([\d,]+)/i);
+    const silverGram = desc.match(/Per\s*Gram[^₹]*₹?\s*([\d,.]+)/i);
+    const silver10 = desc.match(/10\s*Grams?[^₹]*₹?\s*([\d,.]+)/i);
+    const silverKg = desc.match(/Per\s*KG[^₹]*₹?\s*([\d,.]+)/i);
 
     res.json({
       source: "OneIndia RSS",
