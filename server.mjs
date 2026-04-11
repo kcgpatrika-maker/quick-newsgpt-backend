@@ -193,10 +193,9 @@ const leaders = [
 // Gold & Silver RSS endpoint
 app.get("/goldsilver", async (req, res) => {
   try {
-    const feedUrl = "https://www.oneindia.com/rss/business.xml"; // OneIndia Business RSS
+    const feedUrl = "https://www.oneindia.com/rss/business.xml";
     const feed = await parser.parseURL(feedUrl);
 
-    // पहला item लीजिए जिसमें गोल्ड-सिल्वर का डेटा होता है
     const item = feed.items.find(i =>
       i.title.toLowerCase().includes("gold") || i.title.toLowerCase().includes("silver")
     );
@@ -205,15 +204,12 @@ app.get("/goldsilver", async (req, res) => {
       return res.json({ error: "No gold/silver data found in RSS" });
     }
 
-    // description से rates निकालना (सिंपल regex / split से)
-    const desc = item.description;
+    const desc = item.content || item['content:encoded'] || item.description || "";
+    console.log("RSS Description:", desc);   // 👈 यही लाइन डालनी है
 
-    // उदाहरण regex (आपके दिए टेबल के हिसाब से)
+    // regex parsing यहाँ होगा...
     const gold24 = desc.match(/24K[^₹]*₹?\s*([\d,]+)/i);
     const gold22 = desc.match(/22K[^₹]*₹?\s*([\d,]+)/i);
-    const gold18 = desc.match(/18K[^₹]*₹?\s*([\d,]+)/i);
-    const silverGram = desc.match(/Per\s*Gram[^₹]*₹?\s*([\d,.]+)/i);
-    const silver10 = desc.match(/10\s*Grams?[^₹]*₹?\s*([\d,.]+)/i);
     const silverKg = desc.match(/Per\s*KG[^₹]*₹?\s*([\d,.]+)/i);
 
     res.json({
@@ -224,8 +220,6 @@ app.get("/goldsilver", async (req, res) => {
         "22K": gold22 ? `₹${gold22[1]}/gm` : "N/A"
       },
       silver: {
-        "1gm": silverGram ? `₹${silverGram[1]}` : "N/A",
-        "10gm": silver10 ? `₹${silver10[1]}` : "N/A",
         "1kg": silverKg ? `₹${silverKg[1]}` : "N/A"
       }
     });
