@@ -190,69 +190,6 @@ const leaders = [
   }
 });
 
-// /custom (User Uploaded News)
-app.get("/custom", async (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
-    res.json({ news: data });
-  } catch (err) {
-    console.error("Error /custom:", err);
-    res.status(500).json({ error: "Failed to load custom news" });
-  }
-});
-
-// Add custom news
-app.post("/custom/add", (req, res) => {
-  const { title, summary, pin } = req.body;
-  if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
-
-  let data = [];
-  try {
-    data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
-  } catch (err) {
-    data = [];
-  }
-
-  const newItem = {
-    id: `c${Date.now()}`,
-    title: title || "",
-    summary: summary || "", // नई खबर का पूरा content
-    link: "",
-    source: "User Upload",
-    pubDate: new Date().toISOString().split("T")[0],
-    image: ""
-  };
-
-  data.push(newItem);
-  fs.writeFileSync("./custom-news.json", JSON.stringify(data, null, 2));
-
-  res.json({ success: true, news: data });
-});
-
-// Edit custom news
-app.put("/custom/edit/:id", (req, res) => {
-  const { title, pin } = req.body;
-  if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
-
-  let data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
-  data = data.map(it => it.id === req.params.id ? { ...it, title } : it);
-  fs.writeFileSync("./custom-news.json", JSON.stringify(data, null, 2));
-
-  res.json({ success: true, news: data });
-});
-
-// Delete custom news
-app.delete("/custom/delete/:id", (req, res) => {
-  const { pin } = req.body;
-  if (pin !== ADMIN_PIN) return res.status(403).json({ error: "Invalid PIN" });
-
-  let data = JSON.parse(fs.readFileSync("./custom-news.json", "utf-8"));
-  data = data.filter(it => it.id !== req.params.id);
-  fs.writeFileSync("./custom-news.json", JSON.stringify(data, null, 2));
-
-  res.json({ success: true, news: data });
-});
-
 // GoldSilver endpoint using RSS feeds
 app.get("/goldsilver", async (req, res) => {
   try {
