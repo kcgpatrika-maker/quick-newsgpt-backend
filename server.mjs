@@ -190,36 +190,43 @@ const leaders = [
   }
 });
 
-// Gold & Silver RSS endpoint
 app.get("/goldsilver", async (req, res) => {
   try {
-    const feedUrl = "https://www.oneindia.com/rss/business.xml";
+    const feedUrl = "https://www.livemint.com/rss/markets";
     const feed = await parser.parseURL(feedUrl);
 
+    // Jaipur वाली entry खोजें
     const item = feed.items.find(i =>
-      i.title.toLowerCase().includes("gold") || i.title.toLowerCase().includes("silver")
+      i.description.toLowerCase().includes("jaipur")
     );
 
     if (!item) {
-      return res.json({ error: "No gold/silver data found in RSS" });
+      return res.json({ error: "No Jaipur gold/silver data found" });
     }
 
-    const desc = item.content || item['content:encoded'] || item.description || "";
-    console.log("RSS Description:", desc);   // 👈 यही लाइन डालनी है
+    const desc = item.description || "";
+    console.log("RSS Description:", desc);
 
-    // regex parsing यहाँ होगा...
-    const gold24 = desc.match(/24K[^₹]*₹?\s*([\d,]+)/i);
-    const gold22 = desc.match(/22K[^₹]*₹?\s*([\d,]+)/i);
-    const silverKg = desc.match(/Per\s*KG[^₹]*₹?\s*([\d,.]+)/i);
+    // Regex से values निकालें
+    const gold24 = desc.match(/24\s*kt[^₹]*₹([\d,]+)/i);
+    const gold22 = desc.match(/22\s*kt[^₹]*₹([\d,]+)/i);
+    const gold18 = desc.match(/18\s*kt[^₹]*₹([\d,]+)/i);
+
+    const silver10 = desc.match(/silver[^₹]*₹([\d,]+)\s*for\s*10\s*gm/i);
+    const silver100 = desc.match(/₹([\d,]+)\s*for\s*100\s*gm/i);
+    const silverKg = desc.match(/₹([\d,]+)\s*for\s*1\s*kg/i);
 
     res.json({
-      source: "OneIndia RSS",
+      source: "Livemint RSS",
       date: item.pubDate,
       gold: {
-        "24K": gold24 ? `₹${gold24[1]}/gm` : "N/A",
-        "22K": gold22 ? `₹${gold22[1]}/gm` : "N/A"
+        "24K": gold24 ? `₹${gold24[1]}` : "N/A",
+        "22K": gold22 ? `₹${gold22[1]}` : "N/A",
+        "18K": gold18 ? `₹${gold18[1]}` : "N/A"
       },
       silver: {
+        "10gm": silver10 ? `₹${silver10[1]}` : "N/A",
+        "100gm": silver100 ? `₹${silver100[1]}` : "N/A",
         "1kg": silverKg ? `₹${silverKg[1]}` : "N/A"
       }
     });
