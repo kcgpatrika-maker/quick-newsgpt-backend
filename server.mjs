@@ -190,28 +190,26 @@ const leaders = [
   }
 });
 
-// GoldSilver endpoint using RSS feeds
+// GoldSilver endpoint (static/demo JSON)
 app.get("/goldsilver", async (req, res) => {
   try {
-    // Livemint RSS feed (markets)
-    const feed = await parser.parseURL("https://www.livemint.com/rss/markets");
-
-    // Headlines में Gold और Silver खोजें
-    const goldItem = feed.items.find((news) =>
-      news.title.toLowerCase().includes("gold")
-    );
-    const silverItem = feed.items.find((news) =>
-      news.title.toLowerCase().includes("silver")
-    );
-
     res.json({
       date: new Date().toISOString(),
-      gold: goldItem ? `Gold price today - ${goldItem.title}` : "Gold update not found",
-      silver: silverItem ? `Silver price today - ${silverItem.title}` : "Silver update not found"
+      gold: {
+        "24K": "₹15,148/gm",
+        "22K": "₹13,885/gm",
+        "18K": "₹11,361/gm",
+        "jewellery": "₹13,885/gm + GST + making charges"
+      },
+      silver: {
+        "10gm": "₹2,550",
+        "100gm": "₹25,500",
+        "1kg": "₹2,55,000"
+      }
     });
   } catch (err) {
-    console.error("RSS error:", err);
-    res.status(500).json({ error: "Failed to fetch RSS feed" });
+    console.error("GoldSilver error:", err);
+    res.status(500).json({ error: "Failed to fetch gold/silver rates" });
   }
 });
 
