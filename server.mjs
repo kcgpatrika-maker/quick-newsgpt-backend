@@ -199,78 +199,73 @@ app.get("/goldsilver", async (req, res) => {
       silver: {}
     };
 
-    // ----------- Source 1: 5paisa (Gold) -----------
+    // ----------- Source: 5paisa (Gold + Silver) -----------
     try {
-      const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
-      let response = await fetch(url1);
+      const url = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
+      let response = await fetch(url);
       let html = await response.text();
 
-      const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
-      const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
+      // 24K Section
+      const section24 = html.split("जयपुर में आज 24 कैरेट गोल्ड रेट")[1];
+      if (section24) {
+        const g24_1gm = section24.match(/<td>\s*1\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g24_10gm = section24.match(/<td>\s*10\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g24_100gm = section24.match(/<td>\s*100\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g24_1kg = section24.match(/<td>\s*1\s*किलो\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
 
-      if (gold24Match) results.gold["24K_5paisa"] = `₹${gold24Match[1]} per 10gm`;
-      if (gold22Match) results.gold["22K_5paisa"] = `₹${gold22Match[1]} per 10gm`;
+        if (g24_1gm) results.gold["24K_1gm"] = `₹${g24_1gm[1]}`;
+        if (g24_10gm) results.gold["24K_10gm"] = `₹${g24_10gm[1]}`;
+        if (g24_100gm) results.gold["24K_100gm"] = `₹${g24_100gm[1]}`;
+        if (g24_1kg) results.gold["24K_1kg"] = `₹${g24_1kg[1]}`;
+      }
+
+      // 22K Section
+      const section22 = html.split("जयपुर में आज 22 कैरेट गोल्ड रेट")[1];
+      if (section22) {
+        const g22_1gm = section22.match(/<td>\s*1\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g22_10gm = section22.match(/<td>\s*10\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g22_100gm = section22.match(/<td>\s*100\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g22_1kg = section22.match(/<td>\s*1\s*किलो\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+
+        if (g22_1gm) results.gold["22K_1gm"] = `₹${g22_1gm[1]}`;
+        if (g22_10gm) results.gold["22K_10gm"] = `₹${g22_10gm[1]}`;
+        if (g22_100gm) results.gold["22K_100gm"] = `₹${g22_100gm[1]}`;
+        if (g22_1kg) results.gold["22K_1kg"] = `₹${g22_1kg[1]}`;
+      }
+
+      // Silver Section
+      const silverSection = html.split("जयपुर में आज चांदी का भाव")[1];
+      if (silverSection) {
+        const s1gm = silverSection.match(/<td>\s*1\s*ग्राम\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
+        const s10gm = silverSection.match(/<td>\s*10\s*ग्राम\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
+        const s100gm = silverSection.match(/<td>\s*100\s*ग्राम\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
+        const s1kg = silverSection.match(/<td>\s*1\s*किलो\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
+
+        if (s1gm) results.silver["1gm"] = `₹${s1gm[1]}`;
+        if (s10gm) results.silver["10gm"] = `₹${s10gm[1]}`;
+        if (s100gm) results.silver["100gm"] = `₹${s100gm[1]}`;
+        if (s1kg) results.silver["1kg"] = `₹${s1kg[1]}`;
+      }
 
       results.source.push("5paisa");
     } catch (e) {
       console.error("5paisa error:", e);
     }
 
-    // ----------- Source 2: Gadgets360 (Gold + Silver) -----------
-    try {
-      const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
-      let response = await fetch(url2);
-      let html = await response.text();
+    // ----------- Fallback: GoldPriceIndia (Silver) -----------
+    if (!results.silver["1kg"]) {
+      try {
+        const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+        let response = await fetch(url3);
+        let html = await response.text();
 
-      const gold24Match = html.match(/24\s*कैरेट[^₹]*₹\s*([\d,]+)/i);
-      const gold22Match = html.match(/22\s*कैरेट[^₹]*₹\s*([\d,]+)/i);
-      const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
+        const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
+        if (silverMatch2) results.silver["1kg_fallback"] = `₹${silverMatch2[1]}`;
 
-      if (gold24Match) results.gold["24K_Gadgets360"] = `₹${gold24Match[1]} per 10gm`;
-      if (gold22Match) results.gold["22K_Gadgets360"] = `₹${gold22Match[1]} per 10gm`;
-      if (silverMatch) results.silver["1kg_Gadgets360"] = `₹${silverMatch[1]} per kg`;
-
-      results.source.push("Gadgets360");
-    } catch (e) {
-      console.error("Gadgets360 error:", e);
-    }
-
-    // ----------- Source 3: GoldPriceIndia (Gold + Silver) -----------
-    try {
-      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-      let response = await fetch(url3);
-      let html = await response.text();
-
-      const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
-      const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
-      const silverMatch = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
-
-      if (gold24Match) results.gold["24K_GoldPriceIndia"] = `₹${gold24Match[1]} per 10gm`;
-      if (gold22Match) results.gold["22K_GoldPriceIndia"] = `₹${gold22Match[1]} per 10gm`;
-      if (silverMatch) results.silver["1kg_GoldPriceIndia"] = `₹${silverMatch[1]} per kg`;
-
-      results.source.push("GoldPriceIndia");
-    } catch (e) {
-      console.error("GoldPriceIndia error:", e);
-    }
-
-    // ----------- Source 4: GoodReturns (Gold + Silver) -----------
-    try {
-      const url4 = "https://www.goodreturns.in/gold-rates/jaipur.html";
-      let response = await fetch(url4);
-      let html = await response.text();
-
-      const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
-      const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
-      const silverMatch = html.match(/Silver[^₹]*₹([\d,]+)/i);
-
-      if (gold24Match) results.gold["24K_GoodReturns"] = `₹${gold24Match[1]} per gram`;
-      if (gold22Match) results.gold["22K_GoodReturns"] = `₹${gold22Match[1]} per gram`;
-      if (silverMatch) results.silver["Silver_GoodReturns"] = `₹${silverMatch[1]} per kg`;
-
-      results.source.push("GoodReturns");
-    } catch (e) {
-      console.error("GoodReturns error:", e);
+        results.source.push("GoldPriceIndia");
+      } catch (e) {
+        console.error("GoldPriceIndia error:", e);
+      }
     }
 
     res.json(results);
