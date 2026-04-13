@@ -192,46 +192,31 @@ const leaders = [
 
 app.get("/goldsilver", async (req, res) => {
   try {
-    const feedUrl = "https://www.livemint.com/rss/markets";
-    const feed = await parser.parseURL(feedUrl);
+    // GoodReturns Jaipur page
+    const url = "https://www.goodreturns.in/gold-rates/jaipur.html";
+    const response = await fetch(url);   // Node18+ में fetch built-in है
+    const html = await response.text();
 
-    // Jaipur वाली entry खोजें
-    const item = feed.items.find(i =>
-      i.description.toLowerCase().includes("jaipur")
-    );
+    // Regex से Gold 22K और 24K निकालें
+    const gold22Match = html.match(/22\s*Carat[^₹]*₹([\d,]+)/i);
+    const gold24Match = html.match(/24\s*Carat[^₹]*₹([\d,]+)/i);
 
-    if (!item) {
-      return res.json({ error: "No Jaipur gold/silver data found" });
-    }
-
-    const desc = item.description || "";
-    console.log("RSS Description:", desc);
-
-    // Regex से values निकालें
-    const gold24 = desc.match(/24\s*kt[^₹]*₹([\d,]+)/i);
-    const gold22 = desc.match(/22\s*kt[^₹]*₹([\d,]+)/i);
-    const gold18 = desc.match(/18\s*kt[^₹]*₹([\d,]+)/i);
-
-    const silver10 = desc.match(/silver[^₹]*₹([\d,]+)\s*for\s*10\s*gm/i);
-    const silver100 = desc.match(/₹([\d,]+)\s*for\s*100\s*gm/i);
-    const silverKg = desc.match(/₹([\d,]+)\s*for\s*1\s*kg/i);
+    // Regex से Silver per kg निकालें
+    const silverMatch = html.match(/Silver Rate[^₹]*₹([\d,]+)/i);
 
     res.json({
-      source: "Livemint RSS",
-      date: item.pubDate,
+      source: "GoodReturns",
+      date: new Date().toLocaleString("en-IN"),
       gold: {
-        "24K": gold24 ? `₹${gold24[1]}` : "N/A",
-        "22K": gold22 ? `₹${gold22[1]}` : "N/A",
-        "18K": gold18 ? `₹${gold18[1]}` : "N/A"
+        "24K": gold24Match ? `₹${gold24Match[1]}` : "N/A",
+        "22K": gold22Match ? `₹${gold22Match[1]}` : "N/A"
       },
       silver: {
-        "10gm": silver10 ? `₹${silver10[1]}` : "N/A",
-        "100gm": silver100 ? `₹${silver100[1]}` : "N/A",
-        "1kg": silverKg ? `₹${silverKg[1]}` : "N/A"
+        "1kg": silverMatch ? `₹${silverMatch[1]}` : "N/A"
       }
     });
   } catch (err) {
-    console.error("GoldSilver RSS error:", err);
+    console.error("GoldSilver fetch error:", err);
     res.status(500).json({ error: "Failed to fetch gold/silver rates" });
   }
 });
