@@ -42,6 +42,9 @@ const FEEDS = {
     "https://www.amarujala.com/rss/entertainment.xml",
     "https://api.livehindustan.com/feeds/rss/entertainment/rssfeed.xml",
     "https://www.bollywoodhungama.com/rss/news.xml"
+  ],
+  Goldsilver: [
+    "https://www.livemint.com/rss/markets"
   ]
 };
 // fallback sample
