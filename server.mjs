@@ -197,14 +197,16 @@ app.get("/goldsilver", async (req, res) => {
     let response = await fetch(url1);
     let html = await response.text();
 
-    // Regex से Gold 22K और 24K निकालें
+    // Regex से Gold 22K और 24K निकालें (per 10gm)
     let gold22Match = html.match(/22\s*(Carat|K)[^₹]*₹([\d,]+)/i);
     let gold24Match = html.match(/24\s*(Carat|K)[^₹]*₹([\d,]+)/i);
+
+    // Regex से Silver per kg निकालें
     let silverMatch = html.match(/Silver[^₹]*₹([\d,]+)/i);
 
-    let gold22 = gold22Match ? `₹${gold22Match[2]}` : null;
-    let gold24 = gold24Match ? `₹${gold24Match[2]}` : null;
-    let silver1kg = silverMatch ? `₹${silverMatch[1]}` : null;
+    let gold22 = gold22Match ? `₹${gold22Match[2]} per 10gm` : null;
+    let gold24 = gold24Match ? `₹${gold24Match[2]} per 10gm` : null;
+    let silver1kg = silverMatch ? `₹${silverMatch[1]} per 1kg` : null;
 
     // ----------- Source 2: GoldPriceIndia (fallback) -----------
     if (!gold22 || !gold24 || !silver1kg) {
@@ -217,10 +219,10 @@ app.get("/goldsilver", async (req, res) => {
       const silverMatch2 = html.match(/1\s*kg[^₹]*₹([\d,]+)/i);
 
       if (goldMatch) {
-        gold24 = `₹${goldMatch[1]} (per 10gm 24K)`;
+        gold24 = `₹${goldMatch[1]} per 10gm`;
       }
       if (silverMatch2) {
-        silver1kg = `₹${silverMatch2[1]}`;
+        silver1kg = `₹${silverMatch2[1]} per 1kg`;
       }
     }
 
