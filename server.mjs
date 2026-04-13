@@ -208,10 +208,10 @@ app.get("/goldsilver", async (req, res) => {
       // 24K Section isolate
       const section24 = html.split("जयपुर में आज 24 कैरेट गोल्ड रेट")[1];
       if (section24) {
-        const g24_1gm = section24.match(/1\s*ग्राम[^₹]*([\d,]+)/i);
-        const g24_10gm = section24.match(/10\s*ग्राम[^₹]*([\d,]+)/i);
-        const g24_100gm = section24.match(/100\s*ग्राम[^₹]*([\d,]+)/i);
-        const g24_1kg = section24.match(/1\s*किलो[^₹]*([\d,]+)/i);
+        const g24_1gm = section24.match(/1\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g24_10gm = section24.match(/10\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g24_100gm = section24.match(/100\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g24_1kg = section24.match(/1\s*किलो<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
 
         if (g24_1gm) results.gold["24K_1gm"] = `₹${g24_1gm[1]}`;
         if (g24_10gm) results.gold["24K_10gm"] = `₹${g24_10gm[1]}`;
@@ -222,10 +222,10 @@ app.get("/goldsilver", async (req, res) => {
       // 22K Section isolate
       const section22 = html.split("जयपुर में आज 22 कैरेट गोल्ड रेट")[1];
       if (section22) {
-        const g22_1gm = section22.match(/1\s*ग्राम[^₹]*([\d,]+)/i);
-        const g22_10gm = section22.match(/10\s*ग्राम[^₹]*([\d,]+)/i);
-        const g22_100gm = section22.match(/100\s*ग्राम[^₹]*([\d,]+)/i);
-        const g22_1kg = section22.match(/1\s*किलो[^₹]*([\d,]+)/i);
+        const g22_1gm = section22.match(/1\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g22_10gm = section22.match(/10\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g22_100gm = section22.match(/100\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const g22_1kg = section22.match(/1\s*किलो<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
 
         if (g22_1gm) results.gold["22K_1gm"] = `₹${g22_1gm[1]}`;
         if (g22_10gm) results.gold["22K_10gm"] = `₹${g22_10gm[1]}`;
@@ -246,10 +246,10 @@ app.get("/goldsilver", async (req, res) => {
 
       const silverSection = html.split("आज जयपुर में चांदी के दाम")[1];
       if (silverSection) {
-        const s1gm = silverSection.match(/1\s*ग्राम[^₹]*([\d,]+)/i);
-        const s10gm = silverSection.match(/10\s*ग्राम[^₹]*([\d,]+)/i);
-        const s100gm = silverSection.match(/100\s*ग्राम[^₹]*([\d,]+)/i);
-        const s1kg = silverSection.match(/1\s*Kg[^₹]*([\d,]+)/i);
+        const s1gm = silverSection.match(/1\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const s10gm = silverSection.match(/10\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const s100gm = silverSection.match(/100\s*ग्राम<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
+        const s1kg = silverSection.match(/1\s*Kg<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
 
         if (s1gm) results.silver["1gm"] = `₹${s1gm[1]}`;
         if (s10gm) results.silver["10gm"] = `₹${s10gm[1]}`;
