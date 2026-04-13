@@ -192,50 +192,91 @@ const leaders = [
 
 app.get("/goldsilver", async (req, res) => {
   try {
+    let results = {
+      source: [],
+      date: new Date().toLocaleString("en-IN"),
+      gold: {},
+      silver: {}
+    };
+
     // ----------- Source 1: 5paisa (Gold) -----------
-    const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
-    let response = await fetch(url1);
-    let html = await response.text();
+    try {
+      const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
+      let response = await fetch(url1);
+      let html = await response.text();
 
-    // Regex से 24K और 22K per 10gm निकालें
-    const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
-    const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
+      const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
+      const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
 
-    let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
-    let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : "N/A";
+      if (gold24Match) results.gold["24K_5paisa"] = `₹${gold24Match[1]} per 10gm`;
+      if (gold22Match) results.gold["22K_5paisa"] = `₹${gold22Match[1]} per 10gm`;
 
-    // ----------- Source 2: Gadgets360 (Silver) -----------
-    const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
-    response = await fetch(url2);
-    html = await response.text();
-
-    const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
-    let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : null;
-
-    // ----------- Fallback: GoldPriceIndia (Silver) -----------
-    if (!silver1kg) {
-      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-      response = await fetch(url3);
-      html = await response.text();
-
-      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
-      silver1kg = silverMatch2 ? `₹${silverMatch2[1]} per kg` : "N/A";
+      results.source.push("5paisa");
+    } catch (e) {
+      console.error("5paisa error:", e);
     }
 
-    res.json({
-      source: "5paisa + Gadgets360 + GoldPriceIndia",
-      date: new Date().toLocaleString("en-IN"),
-      gold: {
-        "24K": gold24,
-        "22K": gold22
-      },
-      silver: {
-        "1kg": silver1kg
-      }
-    });
+    // ----------- Source 2: Gadgets360 (Gold + Silver) -----------
+    try {
+      const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
+      let response = await fetch(url2);
+      let html = await response.text();
+
+      const gold24Match = html.match(/24\s*कैरेट[^₹]*₹\s*([\d,]+)/i);
+      const gold22Match = html.match(/22\s*कैरेट[^₹]*₹\s*([\d,]+)/i);
+      const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
+
+      if (gold24Match) results.gold["24K_Gadgets360"] = `₹${gold24Match[1]} per 10gm`;
+      if (gold22Match) results.gold["22K_Gadgets360"] = `₹${gold22Match[1]} per 10gm`;
+      if (silverMatch) results.silver["1kg_Gadgets360"] = `₹${silverMatch[1]} per kg`;
+
+      results.source.push("Gadgets360");
+    } catch (e) {
+      console.error("Gadgets360 error:", e);
+    }
+
+    // ----------- Source 3: GoldPriceIndia (Gold + Silver) -----------
+    try {
+      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+      let response = await fetch(url3);
+      let html = await response.text();
+
+      const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
+      const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
+      const silverMatch = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
+
+      if (gold24Match) results.gold["24K_GoldPriceIndia"] = `₹${gold24Match[1]} per 10gm`;
+      if (gold22Match) results.gold["22K_GoldPriceIndia"] = `₹${gold22Match[1]} per 10gm`;
+      if (silverMatch) results.silver["1kg_GoldPriceIndia"] = `₹${silverMatch[1]} per kg`;
+
+      results.source.push("GoldPriceIndia");
+    } catch (e) {
+      console.error("GoldPriceIndia error:", e);
+    }
+
+    // ----------- Source 4: GoodReturns (Gold + Silver) -----------
+    try {
+      const url4 = "https://www.goodreturns.in/gold-rates/jaipur.html";
+      let response = await fetch(url4);
+      let html = await response.text();
+
+      const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
+      const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
+      const silverMatch = html.match(/Silver[^₹]*₹([\d,]+)/i);
+
+      if (gold24Match) results.gold["24K_GoodReturns"] = `₹${gold24Match[1]} per gram`;
+      if (gold22Match) results.gold["22K_GoodReturns"] = `₹${gold22Match[1]} per gram`;
+      if (silverMatch) results.silver["Silver_GoodReturns"] = `₹${silverMatch[1]} per kg`;
+
+      results.source.push("GoodReturns");
+    } catch (e) {
+      console.error("GoodReturns error:", e);
+    }
+
+    res.json(results);
   } catch (err) {
-    console.error("GoldSilver fetch error:", err);
-    res.status(500).json({ error: "Failed to fetch gold/silver rates" });
+    console.error("Collector error:", err);
+    res.status(500).json({ error: "Failed to collect gold/silver rates" });
   }
 });
 
