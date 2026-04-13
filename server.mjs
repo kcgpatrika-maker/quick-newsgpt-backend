@@ -201,8 +201,8 @@ app.get("/goldsilver", async (req, res) => {
     const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
     const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
 
-    let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : null;
-    let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : null;
+    let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
+    let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : "N/A";
 
     // ----------- Source 2: Gadgets360 (Silver) -----------
     const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
@@ -212,15 +212,25 @@ app.get("/goldsilver", async (req, res) => {
     const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
     let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : null;
 
+    // ----------- Fallback: GoldPriceIndia (Silver) -----------
+    if (!silver1kg) {
+      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+      response = await fetch(url3);
+      html = await response.text();
+
+      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
+      silver1kg = silverMatch2 ? `₹${silverMatch2[1]} per kg` : "N/A";
+    }
+
     res.json({
-      source: "5paisa + Gadgets360",
+      source: "5paisa + Gadgets360 + GoldPriceIndia",
       date: new Date().toLocaleString("en-IN"),
       gold: {
-        "24K": gold24 || "N/A",
-        "22K": gold22 || "N/A"
+        "24K": gold24,
+        "22K": gold22
       },
       silver: {
-        "1kg": silver1kg || "N/A"
+        "1kg": silver1kg
       }
     });
   } catch (err) {
