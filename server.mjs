@@ -215,11 +215,14 @@ app.get("/goldsilver", async (req, res) => {
       html = await response.text();
 
       // GoldPriceIndia पर per gram/10gm/1kg rates होते हैं
-      const goldMatch = html.match(/10\s*grams[^₹]*₹([\d,]+)/i);
+      const goldMatch10gm = html.match(/10\s*grams[^₹]*₹([\d,]+)/i);
+      const goldMatch1gm = html.match(/1\s*gram[^₹]*₹([\d,]+)/i);
       const silverMatch2 = html.match(/1\s*kg[^₹]*₹([\d,]+)/i);
 
-      if (goldMatch) {
-        gold24 = `₹${goldMatch[1]} per 10gm`;
+      if (goldMatch10gm) {
+        gold24 = `₹${goldMatch10gm[1]} per 10gm`;
+      } else if (goldMatch1gm) {
+        gold24 = `₹${goldMatch1gm[1]} per gram`;
       }
       if (silverMatch2) {
         silver1kg = `₹${silverMatch2[1]} per 1kg`;
