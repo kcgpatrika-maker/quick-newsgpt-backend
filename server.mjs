@@ -199,52 +199,16 @@ app.get("/goldsilver", async (req, res) => {
       silver: {}
     };
 
-    // ----------- Source: 5paisa (Gold + Silver) -----------
+    // ----------- Source: 5paisa (Gold) -----------
     try {
-      const url = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
-      let response = await fetch(url);
+      const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
+      let response = await fetch(url1);
       let html = await response.text();
 
-      // 24K Section
-      const section24 = html.split("जयपुर में आज 24 कैरेट गोल्ड रेट")[1];
-      if (section24) {
-        const g24_1gm = section24.match(/<td>\s*1\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-        const g24_10gm = section24.match(/<td>\s*10\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-        const g24_100gm = section24.match(/<td>\s*100\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-        const g24_1kg = section24.match(/<td>\s*1\s*किलो\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-
-        if (g24_1gm) results.gold["24K_1gm"] = `₹${g24_1gm[1]}`;
-        if (g24_10gm) results.gold["24K_10gm"] = `₹${g24_10gm[1]}`;
-        if (g24_100gm) results.gold["24K_100gm"] = `₹${g24_100gm[1]}`;
-        if (g24_1kg) results.gold["24K_1kg"] = `₹${g24_1kg[1]}`;
-      }
-
-      // 22K Section
-      const section22 = html.split("जयपुर में आज 22 कैरेट गोल्ड रेट")[1];
-      if (section22) {
-        const g22_1gm = section22.match(/<td>\s*1\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-        const g22_10gm = section22.match(/<td>\s*10\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-        const g22_100gm = section22.match(/<td>\s*100\s*ग्राम\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-        const g22_1kg = section22.match(/<td>\s*1\s*किलो\s*<\/td>\s*<td[^>]*>₹\s*([\d,]+)/i);
-
-        if (g22_1gm) results.gold["22K_1gm"] = `₹${g22_1gm[1]}`;
-        if (g22_10gm) results.gold["22K_10gm"] = `₹${g22_10gm[1]}`;
-        if (g22_100gm) results.gold["22K_100gm"] = `₹${g22_100gm[1]}`;
-        if (g22_1kg) results.gold["22K_1kg"] = `₹${g22_1kg[1]}`;
-      }
-
-      // Silver Section
-      const silverSection = html.split("जयपुर में आज चांदी का भाव")[1];
-      if (silverSection) {
-        const s1gm = silverSection.match(/<td>\s*1\s*ग्राम\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
-        const s10gm = silverSection.match(/<td>\s*10\s*ग्राम\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
-        const s100gm = silverSection.match(/<td>\s*100\s*ग्राम\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
-        const s1kg = silverSection.match(/<td>\s*1\s*किलो\s*<\/td>\s*<td[^>]*>\s*([\d,]+)/i);
-
-        if (s1gm) results.silver["1gm"] = `₹${s1gm[1]}`;
-        if (s10gm) results.silver["10gm"] = `₹${s10gm[1]}`;
-        if (s100gm) results.silver["100gm"] = `₹${s100gm[1]}`;
-        if (s1kg) results.silver["1kg"] = `₹${s1kg[1]}`;
+      // सिर्फ़ 24K Gold per 10gm निकालें
+      const g24 = html.match(/24\s*कैरेट[^₹]*₹\s*([\d,]+)\s*per\s*10gm/i);
+      if (g24) {
+        results.gold["24K_5paisa"] = `₹${g24[1]} per 10gm`;
       }
 
       results.source.push("5paisa");
@@ -252,20 +216,21 @@ app.get("/goldsilver", async (req, res) => {
       console.error("5paisa error:", e);
     }
 
-    // ----------- Fallback: GoldPriceIndia (Silver) -----------
-    if (!results.silver["1kg"]) {
-      try {
-        const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-        let response = await fetch(url3);
-        let html = await response.text();
+    // ----------- Source: GoldPriceIndia (Silver) -----------
+    try {
+      const url2 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+      let response = await fetch(url2);
+      let html = await response.text();
 
-        const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
-        if (silverMatch2) results.silver["1kg_fallback"] = `₹${silverMatch2[1]}`;
-
-        results.source.push("GoldPriceIndia");
-      } catch (e) {
-        console.error("GoldPriceIndia error:", e);
+      // सिर्फ़ Silver per kg निकालें
+      const silverMatch = html.match(/1\s*kilogram[^₹]*₹([\d,]+)\s*per\s*kg/i);
+      if (silverMatch) {
+        results.silver["1kg_GoldPriceIndia"] = `₹${silverMatch[1]} per kg`;
       }
+
+      results.source.push("GoldPriceIndia");
+    } catch (e) {
+      console.error("GoldPriceIndia error:", e);
     }
 
     res.json(results);
