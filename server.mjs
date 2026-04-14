@@ -204,24 +204,36 @@ app.get("/goldsilver", async (req, res) => {
     let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
     let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : "N/A";
 
-    // ----------- Source 2: Gadgets360 (Silver) -----------
-    const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
-    response = await fetch(url2);
-    html = await response.text();
+   // ----------- Source 2: Gadgets360 (Silver) -----------
+const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
+response = await fetch(url2);
+html = await response.text();
 
-    const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
-    let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : null;
+// Regex को थोड़ा strict किया गया है ताकि सही वैल्यू ही निकले
+const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d]{2,3},\d{3})/i);
 
-    // ----------- Fallback: GoldPriceIndia (Silver) -----------
-    if (!silver1kg) {
-      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-      response = await fetch(url3);
-      html = await response.text();
+let silver1kg = null;
+if (silverMatch) {
+  // comma हटाकर number में बदलें
+  const silverValue = parseInt(silverMatch[1].replace(/,/g, ''), 10);
+  // दोबारा format करें ताकि सही दिखे
+  silver1kg = `₹${silverValue.toLocaleString("en-IN")} per kg`;
+}
 
-      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
-      silver1kg = silverMatch2 ? `₹${silverMatch2[1]} per kg` : "N/A";
-    }
+// ----------- Fallback: GoldPriceIndia (Silver) -----------
+if (!silver1kg) {
+  const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+  response = await fetch(url3);
+  html = await response.text();
 
+  const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d]{2,3},\d{3})/i);
+  if (silverMatch2) {
+    const silverValue2 = parseInt(silverMatch2[1].replace(/,/g, ''), 10);
+    silver1kg = `₹${silverValue2.toLocaleString("en-IN")} per kg`;
+  } else {
+    silver1kg = "N/A";
+  }
+}
     res.json({
       source: "5paisa + Gadgets360 + GoldPriceIndia",
       date: new Date().toLocaleString("en-IN"),
