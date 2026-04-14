@@ -194,35 +194,25 @@ const leaders = [
 app.get("/goldsilver", async (req, res) => {
   try {
     // ----------- Source: 5paisa (Gold 24K) -----------
-    const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
-    let response = await fetch(url1);
+    const urlGold = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
+    let response = await fetch(urlGold);
     let html = await response.text();
 
     // Regex से 24K per 10gm निकालें
     const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
     let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
 
-    // ----------- Source: Gadgets360 (Silver) -----------
-    const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
-    response = await fetch(url2);
+    // ----------- Source: 5paisa (Silver 1kg) -----------
+    const urlSilver = "https://www.5paisa.com/hindi/commodity-trading/silver/jaipur";
+    response = await fetch(urlSilver);
     html = await response.text();
 
     const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
-    let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : null;
-
-    // ----------- Fallback: GoldPriceIndia (Silver) -----------
-    if (!silver1kg) {
-      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-      response = await fetch(url3);
-      html = await response.text();
-
-      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
-      silver1kg = silverMatch2 ? `₹${silverMatch2[1]} per kg` : "N/A";
-    }
+    let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : "N/A";
 
     // ----------- Final JSON Response -----------
     res.json({
-      source: "5paisa (Gold) + Gadgets360/GoldPriceIndia (Silver)",
+      source: "5paisa (Gold & Silver)",
       date: new Date().toLocaleString("en-IN"),
       gold: {
         "24K": gold24
