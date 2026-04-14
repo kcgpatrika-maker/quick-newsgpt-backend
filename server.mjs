@@ -196,19 +196,26 @@ app.get("/goldsilver", async (req, res) => {
     let gold24 = "N/A";
     let silver1kg = "N/A";
 
-    // ----------- Source 1: bullions.co.in -----------
+    // ----------- Source: goldpricesindia.com (Gold only) -----------
+    try {
+      let response = await fetch("https://www.goldpricesindia.com/");
+      let html = await response.text();
+
+      // Gold per gram → ×10
+      const goldLineMatch = html.match(/Gold Price Today.*?([\d,]+)\s*Indian Rupee.*?gram 24K/i);
+      if (goldLineMatch) {
+        const val = parseInt(goldLineMatch[1].replace(/,/g, ''), 10) * 10;
+        gold24 = `₹${val.toLocaleString("en-IN")} per 10gm`;
+      }
+    } catch (e) {
+      console.error("GoldPricesIndia fetch failed", e);
+    }
+
+    // ----------- Fallback: bullions.co.in (Silver) -----------
     try {
       let response = await fetch("https://bullions.co.in/");
       let html = await response.text();
 
-      // Gold 24K per 10gm
-      const goldMatch = html.match(/GOLD[^₹]*([\d,]+\.\d+)/i);
-      if (goldMatch) {
-        const val = parseInt(goldMatch[1].replace(/,/g, ''), 10);
-        gold24 = `₹${val.toLocaleString("en-IN")} per 10gm`;
-      }
-
-      // Silver 999 Fine per kg
       const silverMatch = html.match(/SILVER[^₹]*([\d,]+\.\d+)/i);
       if (silverMatch) {
         const val = parseInt(silverMatch[1].replace(/,/g, ''), 10);
@@ -218,48 +225,8 @@ app.get("/goldsilver", async (req, res) => {
       console.error("Bullions fetch failed", e);
     }
 
-    // ----------- Source 2: goldprice.aimindia.in -----------
-    if (gold24 === "N/A" || silver1kg === "N/A") {
-      try {
-        let response = await fetch("https://goldprice.aimindia.in/");
-        let html = await response.text();
-
-        // Gold per gram → ×10
-        const goldGramMatch = html.match(/₹\s*([\d,]+)\s*per gram/i);
-        if (goldGramMatch) {
-          const val = parseInt(goldGramMatch[1].replace(/,/g, ''), 10) * 10;
-          gold24 = `₹${val.toLocaleString("en-IN")} per 10gm`;
-        }
-
-        // Silver per 10g → ×100
-        const silver10gMatch = html.match(/₹\s*([\d,]+)\s*per 10g/i);
-        if (silver10gMatch) {
-          const val = parseInt(silver10gMatch[1].replace(/,/g, ''), 10) * 100;
-          silver1kg = `₹${val.toLocaleString("en-IN")} per kg`;
-        }
-      } catch (e) {
-        console.error("AimIndia fetch failed", e);
-      }
-    }
-
-    // ----------- Source 3: goldpricesindia.com -----------
-    if (gold24 === "N/A") {
-      try {
-        let response = await fetch("https://www.goldpricesindia.com/");
-        let html = await response.text();
-
-        const goldLineMatch = html.match(/Gold Price Today.*?([\d,]+)\s*Indian Rupee.*?gram 24K/i);
-        if (goldLineMatch) {
-          const val = parseInt(goldLineMatch[1].replace(/,/g, ''), 10) * 10;
-          gold24 = `₹${val.toLocaleString("en-IN")} per 10gm`;
-        }
-      } catch (e) {
-        console.error("GoldPricesIndia fetch failed", e);
-      }
-    }
-
     res.json({
-      source: "bullions + aimindia + goldpricesindia",
+      source: "goldpricesindia.com + bullions.co.in",
       date: new Date().toLocaleString("en-IN"),
       gold: {
         "24K": gold24
