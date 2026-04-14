@@ -201,6 +201,7 @@ app.get("/goldsilver", async (req, res) => {
       let response = await fetch("https://www.goldpricesindia.com/");
       let html = await response.text();
 
+      // Example line: "Gold Price Today in India is 16,452 Indian Rupee (INR)/gram 24K"
       const goldLineMatch = html.match(/Gold Price Today.*?([\d,]+)\s*Indian Rupee.*?gram 24K/i);
       if (goldLineMatch) {
         const val = parseInt(goldLineMatch[1].replace(/,/g, ''), 10) * 10;
@@ -215,6 +216,7 @@ app.get("/goldsilver", async (req, res) => {
       let response = await fetch("https://www.goldpricesindia.com/silver-price/");
       let html = await response.text();
 
+      // Example line: "1 kg 265,394.09"
       const silverMatch = html.match(/1\s*kg[^₹]*([\d,]+\.\d+)/i);
       if (silverMatch) {
         const val = parseFloat(silverMatch[1].replace(/,/g, ''));
