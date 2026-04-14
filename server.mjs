@@ -198,46 +198,42 @@ app.get("/goldsilver", async (req, res) => {
 
     // ----------- Gold from goldpricesindia.com -----------
     try {
-      let response = await fetch("https://www.goldpricesindia.com/");
-      let html = await response.text();
+      const response = await fetch("https://www.goldpricesindia.com/");
+      const html = await response.text();
 
-      // Example: "Gold Price Today in India is 16,452 Indian Rupee (INR)/gram 24K"
-      const goldLineMatch = html.match(/is\s*([\d,]+)\s*Indian Rupee.*?gram 24K/i);
-      if (goldLineMatch) {
-        const val = parseInt(goldLineMatch[1].replace(/,/g, ''), 10) * 10;
+      // Example line: "Gold Price Today in India is 16,452 Indian Rupee (INR)/gram 24K"
+      const goldMatch = html.match(/is\s*([\d,]+)\s*Indian Rupee.*?gram 24K/i);
+      if (goldMatch) {
+        const val = parseInt(goldMatch[1].replace(/,/g, ""), 10) * 10;
         gold24 = `₹${val.toLocaleString("en-IN")} per 10gm`;
       }
     } catch (e) {
-      console.error("Gold fetch failed", e);
+      console.error("Gold fetch failed:", e);
     }
 
     // ----------- Silver from goldpricesindia.com/silver-price -----------
     try {
-      let response = await fetch("https://www.goldpricesindia.com/silver-price/");
-      let html = await response.text();
+      const response = await fetch("https://www.goldpricesindia.com/silver-price/");
+      const html = await response.text();
 
-      // Example: "1 kg 265,394.09"
+      // Example line: "1 kg 265,394.09"
       const silverMatch = html.match(/1\s*kg[^₹]*([\d,]+\.\d+)/i);
       if (silverMatch) {
-        const val = parseFloat(silverMatch[1].replace(/,/g, ''));
+        const val = parseFloat(silverMatch[1].replace(/,/g, ""));
         silver1kg = `₹${Math.round(val).toLocaleString("en-IN")} per kg`;
       }
     } catch (e) {
-      console.error("Silver fetch failed", e);
+      console.error("Silver fetch failed:", e);
     }
 
     res.json({
       source: "goldpricesindia.com",
       date: new Date().toLocaleString("en-IN"),
-      gold: {
-        "24K": gold24
-      },
-      silver: {
-        "1kg": silver1kg
-      }
+      gold: { "24K": gold24 },
+      silver: { "1kg": silver1kg }
     });
   } catch (err) {
-    console.error("GoldSilver fetch error:", err);
+    console.error("GoldSilver route error:", err);
     res.status(500).json({ error: "Failed to fetch gold/silver rates" });
   }
 });
