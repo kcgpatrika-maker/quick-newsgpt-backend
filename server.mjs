@@ -193,19 +193,16 @@ const leaders = [
 // ---------------- GOLD & SILVER ROUTE ----------------
 app.get("/goldsilver", async (req, res) => {
   try {
-    // ----------- Source 1: 5paisa (Gold) -----------
+    // ----------- Source: 5paisa (Gold 24K) -----------
     const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
     let response = await fetch(url1);
     let html = await response.text();
 
-    // Regex से 24K और 22K per 10gm निकालें
+    // Regex से 24K per 10gm निकालें
     const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
-    const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
-
     let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
-    let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : "N/A";
 
-    // ----------- Source 2: Gadgets360 (Silver) -----------
+    // ----------- Source: Gadgets360 (Silver) -----------
     const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
     response = await fetch(url2);
     html = await response.text();
@@ -225,11 +222,10 @@ app.get("/goldsilver", async (req, res) => {
 
     // ----------- Final JSON Response -----------
     res.json({
-      source: "5paisa + Gadgets360 + GoldPriceIndia",
+      source: "5paisa (Gold) + Gadgets360/GoldPriceIndia (Silver)",
       date: new Date().toLocaleString("en-IN"),
       gold: {
-        "24K": gold24,
-        "22K": gold22
+        "24K": gold24
       },
       silver: {
         "1kg": silver1kg
