@@ -199,7 +199,7 @@ app.get("/goldsilver", async (req, res) => {
     let html = await response.text();
 
     // Regex से 24K per 10gm निकालें
-    const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
+    const gold24Match = html.match(/24K[^₹]*₹\s*([\d,]+)/i);
     let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
 
     // ----------- Source: 5paisa (Silver 1kg) -----------
@@ -207,6 +207,7 @@ app.get("/goldsilver", async (req, res) => {
     response = await fetch(urlSilver);
     html = await response.text();
 
+    // Regex को और सटीक बनाया गया है
     const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
     let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : "N/A";
 
