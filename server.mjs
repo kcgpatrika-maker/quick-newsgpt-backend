@@ -210,7 +210,6 @@ app.get("/goldsilver", async (req, res) => {
     // Silver के लिए बॉक्स वाला बड़ा नंबर पकड़ें (₹ हटाकर)
     const silverMatch = html.match(/सिल्वर\s*\/\s*kg[^0-9]*([\d,]+)/i);
     let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : "N/A";
-
     // ----------- Final JSON Response -----------
     res.json({
       source: "5paisa (Gold & Silver)",
