@@ -193,51 +193,52 @@ const leaders = [
 // ---------------- GOLD & SILVER ROUTE ----------------
 app.get("/goldsilver", async (req, res) => {
   try {
-    let gold24 = "N/A";
-    let silver1kg = "N/A";
+    // ----------- Source 1: 5paisa (Gold) -----------
+    const url1 = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
+    let response = await fetch(url1);
+    let html = await response.text();
 
-    // ----------- Gold from goldpricesindia.com -----------
-    try {
-      const response = await fetch("https://www.goldpricesindia.com/");
-      const html = await response.text();
+    // Regex से 24K और 22K per 10gm निकालें
+    const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
+    const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
 
-      // Example line: "Gold Price Today in India is 16,452 Indian Rupee (INR)/gram 24K"
-      const goldMatch = html.match(/is\s*([\d,]+)\s*Indian Rupee.*?gram 24K/i);
-      if (goldMatch) {
-        const val = parseInt(goldMatch[1].replace(/,/g, ""), 10) * 10;
-        gold24 = `₹${val.toLocaleString("en-IN")} per 10gm`;
-      }
-    } catch (e) {
-      console.error("Gold fetch failed:", e);
-    }
+    let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
+    let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : "N/A";
 
-    // ----------- Silver from goldpricesindia.com/silver-price -----------
-    try {
-      const response = await fetch("https://www.goldpricesindia.com/silver-price/");
-      const html = await response.text();
+    // ----------- Source 2: Gadgets360 (Silver) -----------
+    const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
+    response = await fetch(url2);
+    html = await response.text();
 
-      // Example line: "1 kg 265,394.09"
-      const silverMatch = html.match(/1\s*kg[^₹]*([\d,]+\.\d+)/i);
-      if (silverMatch) {
-        const val = parseFloat(silverMatch[1].replace(/,/g, ""));
-        silver1kg = `₹${Math.round(val).toLocaleString("en-IN")} per kg`;
-      }
-    } catch (e) {
-      console.error("Silver fetch failed:", e);
+    const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
+    let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : null;
+
+    // ----------- Fallback: GoldPriceIndia (Silver) -----------
+    if (!silver1kg) {
+      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+      response = await fetch(url3);
+      html = await response.text();
+
+      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d,]+)/i);
+      silver1kg = silverMatch2 ? `₹${silverMatch2[1]} per kg` : "N/A";
     }
 
     res.json({
-      source: "goldpricesindia.com",
+      source: "5paisa + Gadgets360 + GoldPriceIndia",
       date: new Date().toLocaleString("en-IN"),
-      gold: { "24K": gold24 },
-      silver: { "1kg": silver1kg }
+      gold: {
+        "24K": gold24,
+        "22K": gold22
+      },
+      silver: {
+        "1kg": silver1kg
+      }
     });
   } catch (err) {
-    console.error("GoldSilver route error:", err);
+    console.error("GoldSilver fetch error:", err);
     res.status(500).json({ error: "Failed to fetch gold/silver rates" });
   }
 });
-
 // /health
 app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
 
