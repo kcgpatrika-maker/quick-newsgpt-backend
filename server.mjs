@@ -207,12 +207,8 @@ app.get("/goldsilver", async (req, res) => {
     response = await fetch(urlSilver);
     html = await response.text();
 
-    // Silver के लिए बॉक्स/लाइन/टेबल से बड़ा नंबर पकड़ने के लिए regex
-    const silverMatch =
-      html.match(/सिल्वर[^₹]*₹\s*([\d,]+)/i) || // टेक्स्ट लाइन "₹2,55,000 प्रति किलोग्राम"
-      html.match(/1\s*kg[^₹]*₹\s*([\d,]+)/i) || // टेबल में "1 किलो"
-      html.match(/([\d,]+)\s*<\/td>\s*<\/tr>/i); // fallback
-
+    // Silver के लिए बॉक्स वाला बड़ा नंबर पकड़ें (₹ हटाकर)
+    const silverMatch = html.match(/सिल्वर\s*\/\s*kg[^0-9]*([\d,]+)/i);
     let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : "N/A";
 
     // ----------- Final JSON Response -----------
