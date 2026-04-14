@@ -213,37 +213,38 @@ app.get("/goldsilver", async (req, res) => {
     }
 
     // ----------- Source 2: Gadgets360 (Silver) -----------
-    const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
-    response = await fetch(url2);
-    html = await response.text();
+    // ----------- Source 2: Gadgets360 (Silver) -----------
+const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
+response = await fetch(url2);
+html = await response.text();
 
-    const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
+// Regex अब Kg/kilogram/किलो सब पकड़ लेगा
+const silverMatch = html.match(/(1\s*(Kg|kg|kilogram|किलो))[^₹]*₹\s*([\d,]+)/i);
 
-    let silver1kg = null;
-    if (silverMatch) {
-      const val = parseInt(silverMatch[1].replace(/,/g, ''), 10);
-      // Validation: सिल्वर का भाव भारत में आमतौर पर 1–5 लाख के बीच होता है
-      if (val > 100000 && val < 500000) {
-        silver1kg = `₹${val.toLocaleString("en-IN")} per kg`;
-      }
+let silver1kg = null;
+if (silverMatch) {
+  const val = parseInt(silverMatch[3].replace(/,/g, ''), 10);
+  // Validation: सिल्वर का भाव भारत में आमतौर पर 1–5 लाख के बीच होता है
+  if (val > 100000 && val < 500000) {
+    silver1kg = `₹${val.toLocaleString("en-IN")} per kg`;
+  }
+}
+
+// ----------- Fallback: GoldPriceIndia (Silver) -----------
+if (!silver1kg) {
+  const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+  response = await fetch(url3);
+  html = await response.text();
+
+  const silverMatch2 = html.match(/(1\s*(Kg|kg|kilogram|किलो))[^₹]*₹\s*([\d,]+)/i);
+  if (silverMatch2) {
+    const val2 = parseInt(silverMatch2[3].replace(/,/g, ''), 10);
+    if (val2 > 100000 && val2 < 500000) {
+      silver1kg = `₹${val2.toLocaleString("en-IN")} per kg`;
     }
-
-    // ----------- Fallback: GoldPriceIndia (Silver) -----------
-    if (!silver1kg) {
-      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-      response = await fetch(url3);
-      html = await response.text();
-
-      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹\s*([\d,]+)/i);
-      if (silverMatch2) {
-        const val2 = parseInt(silverMatch2[1].replace(/,/g, ''), 10);
-        if (val2 > 100000 && val2 < 500000) {
-          silver1kg = `₹${val2.toLocaleString("en-IN")} per kg`;
-        }
-      }
-      if (!silver1kg) silver1kg = "N/A";
-    }
-
+  }
+  if (!silver1kg) silver1kg = "N/A";
+}
     res.json({
       source: "5paisa + Gadgets360 + GoldPriceIndia",
       date: new Date().toLocaleString("en-IN"),
