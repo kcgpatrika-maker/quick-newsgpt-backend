@@ -197,43 +197,50 @@ app.get("/goldsilver", async (req, res) => {
     let response = await fetch(url1);
     let html = await response.text();
 
-    // Regex से 24K और 22K per 10gm निकालें
-    const gold24Match = html.match(/24K[^₹]*₹([\d,]+)/i);
-    const gold22Match = html.match(/22K[^₹]*₹([\d,]+)/i);
+    // Regex से 24K और 22K per 10gm निकालें (flexible digits)
+    const gold24Match = html.match(/24K[^₹]*₹\s*([\d,]+)/i);
+    const gold22Match = html.match(/22K[^₹]*₹\s*([\d,]+)/i);
 
-    let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
-    let gold22 = gold22Match ? `₹${gold22Match[1]} per 10gm` : "N/A";
+    let gold24 = "N/A";
+    let gold22 = "N/A";
 
-   // ----------- Source 2: Gadgets360 (Silver) -----------
-const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
-response = await fetch(url2);
-html = await response.text();
+    if (gold24Match) {
+      const goldValue24 = parseInt(gold24Match[1].replace(/,/g, ''), 10);
+      gold24 = `₹${goldValue24.toLocaleString("en-IN")} per 10gm`;
+    }
+    if (gold22Match) {
+      const goldValue22 = parseInt(gold22Match[1].replace(/,/g, ''), 10);
+      gold22 = `₹${goldValue22.toLocaleString("en-IN")} per 10gm`;
+    }
 
-// Regex को थोड़ा strict किया गया है ताकि सही वैल्यू ही निकले
-const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d]{2,3},\d{3})/i);
+    // ----------- Source 2: Gadgets360 (Silver) -----------
+    const url2 = "https://hindi.gadgets360.com/finance/silver-rate-in-jaipur";
+    response = await fetch(url2);
+    html = await response.text();
 
-let silver1kg = null;
-if (silverMatch) {
-  // comma हटाकर number में बदलें
-  const silverValue = parseInt(silverMatch[1].replace(/,/g, ''), 10);
-  // दोबारा format करें ताकि सही दिखे
-  silver1kg = `₹${silverValue.toLocaleString("en-IN")} per kg`;
-}
+    const silverMatch = html.match(/1\s*Kg[^₹]*₹\s*([\d,]+)/i);
 
-// ----------- Fallback: GoldPriceIndia (Silver) -----------
-if (!silver1kg) {
-  const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
-  response = await fetch(url3);
-  html = await response.text();
+    let silver1kg = null;
+    if (silverMatch) {
+      const silverValue = parseInt(silverMatch[1].replace(/,/g, ''), 10);
+      silver1kg = `₹${silverValue.toLocaleString("en-IN")} per kg`;
+    }
 
-  const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹([\d]{2,3},\d{3})/i);
-  if (silverMatch2) {
-    const silverValue2 = parseInt(silverMatch2[1].replace(/,/g, ''), 10);
-    silver1kg = `₹${silverValue2.toLocaleString("en-IN")} per kg`;
-  } else {
-    silver1kg = "N/A";
-  }
-}
+    // ----------- Fallback: GoldPriceIndia (Silver) -----------
+    if (!silver1kg) {
+      const url3 = "https://www.goldpriceindia.com/gold-price-jaipur.php";
+      response = await fetch(url3);
+      html = await response.text();
+
+      const silverMatch2 = html.match(/1\s*kilogram[^₹]*₹\s*([\d,]+)/i);
+      if (silverMatch2) {
+        const silverValue2 = parseInt(silverMatch2[1].replace(/,/g, ''), 10);
+        silver1kg = `₹${silverValue2.toLocaleString("en-IN")} per kg`;
+      } else {
+        silver1kg = "N/A";
+      }
+    }
+
     res.json({
       source: "5paisa + Gadgets360 + GoldPriceIndia",
       date: new Date().toLocaleString("en-IN"),
