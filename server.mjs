@@ -209,22 +209,12 @@ html = await response.text();
 
 let silver1kg = "N/A";
 
-const silverPatterns = [
-  /सिल्वर कीमत\s*₹\s*([\d,]+)/i,
-  /चांदी[^₹]*₹\s*([\d,]+)/i,
-  /silver[^₹]*₹\s*([\d,]+)/i,
-  /₹\s*([\d,]+)[^<]{0,40}kg/i
-];
+// पहले किलो वाला भाव खोजो
+const silverKgMatch = html.match(/चांदी\s*\/\s*किग्रा[\s\S]*?₹\s*([\d,]+)/i);
 
-for (const pattern of silverPatterns) {
-  const match = html.match(pattern);
-  if (match) {
-    silver1kg = `₹${match[1]} per kg`;
-    break;
-  }
+if (silverKgMatch) {
+  silver1kg = `₹${silverKgMatch[1]} per kg`;
 }
-
-console.log("Silver rate:", silver1kg);
     // ----------- Final JSON Response -----------
     res.json({
       source: "5paisa (Gold & Silver)",
