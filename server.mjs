@@ -202,14 +202,29 @@ app.get("/goldsilver", async (req, res) => {
     const gold24Match = html.match(/24K[^₹]*₹\s*([\d,]+)/i);
     let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
 
-    // ----------- Source: 5paisa (Silver 1kg) -----------
-    const urlSilver = "https://www.5paisa.com/hindi/commodity-trading/silver/jaipur";
-    response = await fetch(urlSilver);
-    html = await response.text();
+// ----------- Source: 5paisa (Silver 1kg) -----------
+const urlSilver = "https://www.5paisa.com/hindi/commodity-trading/silver/jaipur";
+response = await fetch(urlSilver);
+html = await response.text();
 
-    // Silver के लिए 
-    const silverMatch = html.match(/सिल्वर कीमत\s*₹\s*([\d,]+)/i);
-    let silver1kg = silverMatch ? `₹${silverMatch[1]} per kg` : "N/A";
+let silver1kg = "N/A";
+
+const silverPatterns = [
+  /सिल्वर कीमत\s*₹\s*([\d,]+)/i,
+  /चांदी[^₹]*₹\s*([\d,]+)/i,
+  /silver[^₹]*₹\s*([\d,]+)/i,
+  /₹\s*([\d,]+)[^<]{0,40}kg/i
+];
+
+for (const pattern of silverPatterns) {
+  const match = html.match(pattern);
+  if (match) {
+    silver1kg = `₹${match[1]} per kg`;
+    break;
+  }
+}
+
+console.log("Silver rate:", silver1kg);
     // ----------- Final JSON Response -----------
     res.json({
       source: "5paisa (Gold & Silver)",
