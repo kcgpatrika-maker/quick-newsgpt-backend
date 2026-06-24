@@ -209,11 +209,11 @@ html = await response.text();
 
 let silver1kg = "N/A";
 
-// पहले किलो वाला भाव खोजो
-const silverKgMatch = html.match(/चांदी\s*\/\s*किग्रा[\s\S]*?₹\s*([\d,]+)/i);
+// "₹2,45,000 प्रति 1 किलोग्राम" जैसा text खोजो
+const silverMatch = html.match(/₹\s*([\d,]+)\s*प्रति\s*1\s*किलोग्राम/i);
 
-if (silverKgMatch) {
-  silver1kg = `₹${silverKgMatch[1]} per kg`;
+if (silverMatch) {
+  silver1kg = `₹${silverMatch[1]} per kg`;
 }
     // ----------- Final JSON Response -----------
     res.json({
