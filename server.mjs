@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Parser from "rss-parser";
 import fs from "fs";
+import * as cheerio from "cheerio";
 
 const app = express();
 const parser = new Parser();
