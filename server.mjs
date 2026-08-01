@@ -206,7 +206,7 @@ app.get("/goldsilver", async (req, res) => {
 const urlSilver = "https://www.5paisa.com/hindi/commodity-trading/silver/jaipur";
 response = await fetch(urlSilver);
 html = await response.text();
-
+console.log(html);
 let silver1kg = "N/A";
 
 // "₹2,45,000 प्रति 1 किलोग्राम" जैसा text खोजो
