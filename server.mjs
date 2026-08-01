@@ -195,7 +195,12 @@ app.get("/goldsilver", async (req, res) => {
   try {
     // ----------- Source: 5paisa (Gold 24K) -----------
     const urlGold = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
-    let response = await fetch(urlGold);
+    let response = await fetch(urlGold, {
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
+  }
+});
     let html = await response.text();
 
     // Regex से 24K per 10gm निकालें
@@ -204,7 +209,12 @@ app.get("/goldsilver", async (req, res) => {
 
 // ----------- Source: 5paisa (Silver 1kg) -----------
 const urlSilver = "https://www.5paisa.com/hindi/commodity-trading/silver/jaipur";
-response = await fetch(urlSilver);
+response = await fetch(urlSilver, {
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
+  }
+});    
 html = await response.text();
 console.log(html);
 let silver1kg = "N/A";
