@@ -191,44 +191,58 @@ const leaders = [
   }
 });
 
-// ---------------- GOLD & SILVER ROUTE ----------------
+// ---------------- GOLD & SILVER ROUTE (Goodreturns) ----------------
 app.get("/goldsilver", async (req, res) => {
   try {
-    // ----------- Source: 5paisa (Gold 24K) -----------
-    const urlGold = "https://www.5paisa.com/hindi/commodity-trading/gold/jaipur";
-    let response = await fetch(urlGold, {
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
-  }
-});
-    let html = await response.text();
+    const url = "https://www.goodreturns.in/gold-rates/jaipur.html";
 
-    // Regex से 24K per 10gm निकालें
-    const gold24Match = html.match(/24K[^₹]*₹\s*([\d,]+)/i);
-    let gold24 = gold24Match ? `₹${gold24Match[1]} per 10gm` : "N/A";
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
+      }
+    });
 
-// ----------- Source: 5paisa (Silver 1kg) -----------
-const urlSilver = "https://www.5paisa.com/hindi/commodity-trading/silver/jaipur";
-response = await fetch(urlSilver, {
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
-  }
-});    
-html = await response.text();
-console.log(html);
-let silver1kg = "N/A";
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-// "₹2,45,000 प्रति 1 किलोग्राम" जैसा text खोजो
-const silverMatch = html.match(/₹\s*([\d,]+)\s*प्रति\s*1\s*किलोग्राम/i);
+    // ---------------- GOLD ----------------
+    let gold24 = "N/A";
 
-if (silverMatch) {
-  silver1kg = `₹${silverMatch[1]} per kg`;
-}
-    // ----------- Final JSON Response -----------
+    const introText = $("#gr_intro_content").text();
+
+    const goldMatch = introText.match(
+      /₹\s*([\d,]+)\s*per gram\s*for\s*24/i
+    );
+
+    if (goldMatch) {
+      const gram = parseInt(goldMatch[1].replace(/,/g, ""), 10);
+      const tenGram = (gram * 10).toLocaleString("en-IN");
+      gold24 = `₹${tenGram} per 10gm`;
+    }
+
+    // ---------------- SILVER ----------------
+    let silver1kg = "N/A";
+
+    $(".gr-wealth-ticker-item").each((i, el) => {
+      const label = $(el).find(".gr-wealth-ticker-label").text().trim();
+      if (label.toLowerCase().includes("silver")) {
+        const value = $(el)
+          .find(".gr-wealth-ticker-value")
+          .text()
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const match = value.match(/₹\s*([\d,]+)/);
+
+        if (match) {
+          silver1kg = `₹${match[1]} per kg`;
+        }
+      }
+    });
+
     res.json({
-      source: "5paisa (Gold & Silver)",
+      source: "Goodreturns",
       date: new Date().toLocaleString("en-IN"),
       gold: {
         "24K": gold24
@@ -237,9 +251,14 @@ if (silverMatch) {
         "1kg": silver1kg
       }
     });
+
   } catch (err) {
-    console.error("GoldSilver fetch error:", err);
-    res.status(500).json({ error: "Failed to fetch gold/silver rates" });
+    console.error("GoldSilver error:", err);
+
+    res.status(500).json({
+      source: "Goodreturns",
+      error: "Failed to fetch Gold & Silver rates"
+    });
   }
 });
 app.get("/goldtest", async (req, res) => {
