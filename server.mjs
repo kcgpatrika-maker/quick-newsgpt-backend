@@ -242,7 +242,25 @@ if (silverMatch) {
     res.status(500).json({ error: "Failed to fetch gold/silver rates" });
   }
 });
+app.get("/goldtest", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://www.goodreturns.in/gold-rates/jaipur.html",
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
+        }
+      }
+    );
 
+    const html = await response.text();
+
+    res.send(html);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
 // /health
 app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
 
